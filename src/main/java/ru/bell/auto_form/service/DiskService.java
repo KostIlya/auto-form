@@ -106,6 +106,7 @@ public class DiskService {
     }
 
     // Загрузка на яндекс диск
+    // fullFileName - путь от корня яндекс диска до загружаемого файла(/dir1/file1.docx)
     public String upload(InputStream is, String fullFileName) throws IOException {
         if (is == null || fullFileName == null) {
             throw new NullPointerException("is or fullFileName is null");
@@ -152,7 +153,8 @@ public class DiskService {
     }
 
     // Скачать файл по ссылке
-    public String downloadForLink(String href) throws IOException {
+    public String downloadFileFromYandexFormForLink(String href) throws IOException {
+        String baseUrl = "https://forms.yandex.ru/u/files";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "OAuth " + token);
         headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
@@ -178,7 +180,7 @@ public class DiskService {
             log.info("contentDisposition = {}", URLDecoder.decode(contentDisposition));
         else
             log.error("contentDisposition = null");
-        String[] p = href.split("\\?", 2)[1].split("=")[1].split("%2F");
+        String[] p = href.split("\\?", 2)[1].split("=")[1].split("/");
         String filename = p[p.length - 1];
         String destination = currentProperties.getDownloadDir() + filename;
 
@@ -205,7 +207,7 @@ public class DiskService {
 
         ResponseEntity<Link> response = restTemplate.exchange(requestEntity, Link.class);
         if (!response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
-            throw new IOException("Error during getting link");
+            throw new RuntimeException("Error during getting link");
         }
         String href = response.getBody().href();
         System.out.println(href);
@@ -225,14 +227,14 @@ public class DiskService {
                 .filter((s) -> s.startsWith("filename="))
                 .map(s -> s.split("=")[1])
                 .findFirst().orElseThrow(() -> new RuntimeException("Error parse href for filename"));
-
-        try (FileOutputStream fos = new FileOutputStream(resourcesPath + filename)) {
+        String filePath = currentProperties.getDownloadDir() + filename;
+        try (FileOutputStream fos = new FileOutputStream(filePath)) {
             fos.write(responseDownload.getBody());
         } catch (Exception e) {
             System.out.println("Folder not found: " + e.getMessage());
         }
 
-        return "File is downloaded successfully to folder /resources/files/" + filename;
+        return filePath;
     }
 
 
