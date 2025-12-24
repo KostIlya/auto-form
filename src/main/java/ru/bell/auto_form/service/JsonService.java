@@ -76,7 +76,7 @@ public class JsonService {
                 case "rezumes":
                     if (valueNode.isArray() && !valueNode.isEmpty()) {
                         AnswerFileValue fileValue = objectMapper.convertValue(valueNode.get(0), AnswerFileValue.class);
-                        // Собираем полный URL к файлу
+
                         String fileUrl = "https://forms.yandex.ru/u/files?path=" + fileValue.getPath();
                         answerDTO.setResume(fileUrl);
                     }
@@ -84,7 +84,7 @@ public class JsonService {
                 case "questionnaires":
                     if (valueNode.isArray() && !valueNode.isEmpty()) {
                         AnswerFileValue fileValue = objectMapper.convertValue(valueNode.get(0), AnswerFileValue.class);
-                        // Собираем полный URL к файлу
+
                         String fileUrl = "https://forms.yandex.ru/u/files?path=" + fileValue.getPath();
                         answerDTO.setQuestionnaire(fileUrl);
                     }

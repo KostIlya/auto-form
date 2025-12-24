@@ -53,13 +53,10 @@ public class FormService {
 
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(baseUrl);
 
-//            log.info("baseURL: {}", baseUrl);
-
-            // Если нужно указать временной интервал
             ZonedDateTime endTime = ZonedDateTime.now(ZoneOffset.UTC);
             ZonedDateTime startTime = endTime.minusSeconds(seconds);
-
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
             ExportRequest request = new ExportRequest();
             request.setColumns(getColumnsWithId());
             request.setFormat("csv");
@@ -70,7 +67,6 @@ public class FormService {
 
             ObjectMapper mapper = new ObjectMapper();
             String requestBodyJson = mapper.writeValueAsString(request);
-//            System.out.println("Request Body: " + requestBodyJson);
 
             HttpEntity<String> entity = new HttpEntity<>(requestBodyJson, headers);
 
@@ -84,8 +80,7 @@ public class FormService {
             if (!response.getStatusCode().equals(HttpStatusCode.valueOf(202))) {
                 throw new RuntimeException("getAnswersInLastSeconds: Don't get export");
             }
-            // ok, fail, wait, not_running
-//            System.out.println(URLDecoder.decode(response.getBody().status()));
+            // response.getBody().status(): ok, fail, wait, not_running
 
             if (response.getBody().status().equals("not_running") || response.getBody().status().equals("fail")) {
                 throw new RuntimeException("getAnswersInLastSeconds: Status export is " + response.getBody().status());
@@ -98,7 +93,7 @@ public class FormService {
         }
     }
 
-    private List<String> getColumnsWithId(){
+    private List<String> getColumnsWithId() {
         List<String> columns = new LinkedList<>();
         columns.add("id");
         return columns;
@@ -113,6 +108,7 @@ public class FormService {
 
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(baseUrl).queryParam("task_id", id);
         HttpEntity<String> entity = new HttpEntity<>(headers);
+
         ResponseEntity<String> response = restTemplate.exchange(
                 uriBuilder.toUriString(),
                 HttpMethod.GET,
@@ -121,12 +117,10 @@ public class FormService {
         );
         String responseBody = response.getBody();
         if (response.getStatusCode().equals(HttpStatusCode.valueOf(202))) {
-
             ObjectMapper mapper = new ObjectMapper();
             JsonNode jsonNode = mapper.readTree(responseBody);
             String status = jsonNode.get("status").asText();
             while (status.equals("wait")) {
-//                log.info("getAnswers: loop wait");
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
@@ -157,9 +151,7 @@ public class FormService {
 
         if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
             String csvString = new String(responseCsv.getBody(), StandardCharsets.UTF_8);
-//            log.info("getAnswers: csvString: {}", csvString);
             ids = getIdFromCsvResponse(csvString);
-//            log.info("getAnswers: ids: {}", ids);
         } else {
             throw new RuntimeException("getAnswers: status code responseCsv: " + response.getStatusCode());
         }
@@ -187,7 +179,7 @@ public class FormService {
         } catch (Exception e) {
             throw new RuntimeException("getIdFromCsvResponse: " + e.getMessage());
         }
-        log.info("getIdFromCsvResponse: ids: {}", ids);
+        log.info("getIdFromCsvResponse(): ids: {}", ids);
         return ids;
     }
 
@@ -196,7 +188,6 @@ public class FormService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "OAuth " + token);
-//        headers.set("Host", "api.forms.yandex.net");
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(baseUrl)
                     .queryParam("answer_id", id);
 
@@ -209,8 +200,6 @@ public class FormService {
                     String.class
             );
 
-//            System.out.println(URLDecoder.decode(response.getBody()));
-
             return response.getBody();
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -218,3 +207,43 @@ public class FormService {
     }
 
 }
+
+
+
+//        ResponseEntity<String> response = restTemplate.exchange(
+//                uriBuilder.toUriString(),
+//                HttpMethod.GET,
+//                entity,
+//                String.class
+//        );
+//        String responseBody = response.getBody();
+
+//        String status = "wait";
+//        ResponseEntity<String> response = null;
+//        while (status.equals("wait")) {
+//            response = restTemplate.exchange(
+//                    uriBuilder.toUriString(),
+//                    HttpMethod.GET,
+//                    entity,
+//                    String.class
+//            );
+//            if (!response.getStatusCode().is2xxSuccessful()) {
+//                throw new RuntimeException("getAnswers(): response.getStatusCode() = " + response.getStatusCode());
+//            }
+//            String responseBody = response.getBody();
+//            ObjectMapper mapper = new ObjectMapper();
+//            JsonNode jsonNode = mapper.readTree(responseBody);
+//            status = jsonNode.get("status").asText();
+//            log.info(response.getBody());
+//            try {
+//                Thread.sleep(2000);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e.getMessage());
+//            }
+//            if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
+//                break;
+//            }
+//            if (status.equals("not_running") || status.equals("fail")) {
+//                throw new RuntimeException("getAnswersInLastSeconds: Status export is " + status);
+//            }
+//        }

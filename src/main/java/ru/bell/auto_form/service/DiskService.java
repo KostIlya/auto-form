@@ -9,6 +9,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.bell.auto_form.config.CurrentConfigProperties;
+import ru.bell.auto_form.model.PublishFileResponse;
 import ru.bell.auto_form.model.record.Link;
 
 import java.io.FileOutputStream;
@@ -17,7 +18,6 @@ import java.io.InputStream;
 import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.List;
-
 
 @Service
 @Slf4j
@@ -107,7 +107,7 @@ public class DiskService {
 
     // Загрузка на яндекс диск
     // fullFileName - путь от корня яндекс диска до загружаемого файла(/dir1/file1.docx)
-    public String upload(InputStream is, String fullFileName) throws IOException {
+    public void upload(InputStream is, String fullFileName) throws IOException {
         if (is == null || fullFileName == null) {
             throw new NullPointerException("is or fullFileName is null");
         }
@@ -144,8 +144,6 @@ public class DiskService {
 
         if (responseToUpload.getStatusCode().is2xxSuccessful()) {
             log.info("File is uploaded successfully");
-            log.info("responseToUpload.getBody(): {}",responseToUpload.getBody());
-            return "true";
         } else {
             throw new RuntimeException("File wasn't upload. HttpStatus: " + responseToUpload.getStatusCode() +
                     ". Body: " + responseToUpload.getBody());
@@ -171,15 +169,15 @@ public class DiskService {
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new IOException("Error downloading file");
         }
-        String contentDisposition = response.getHeaders().getFirst("Content-Disposition");
-        log.warn("JSON STATUS CODE response download: {}", response.getStatusCode());
-        log.warn("JSON HEADERS response download: {}", response.getHeaders());
-        log.warn("JSON BODY response download: {}", response.getBody());
-        //
-        if (contentDisposition != null)
-            log.info("contentDisposition = {}", URLDecoder.decode(contentDisposition));
-        else
-            log.error("contentDisposition = null");
+//        String contentDisposition = response.getHeaders().getFirst("Content-Disposition");
+//        log.warn("JSON STATUS CODE response download: {}", response.getStatusCode());
+//        log.warn("JSON HEADERS response download: {}", response.getHeaders());
+//        log.warn("JSON BODY response download: {}", response.getBody());
+//        //
+//        if (contentDisposition != null)
+//            log.info("contentDisposition = {}", URLDecoder.decode(contentDisposition));
+//        else
+//            log.error("contentDisposition = null");
         String[] p = href.split("\\?", 2)[1].split("=")[1].split("/");
         String filename = p[p.length - 1];
         String destination = currentProperties.getDownloadDir() + filename;
@@ -237,24 +235,44 @@ public class DiskService {
         return filePath;
     }
 
+    public String publicFile(String filePath) {
+//        String line;
+        String baseUrl = "https://cloud-api.yandex.net/v1/disk/resources/publish";
+        RequestEntity<Void> request = RequestEntity.put(
+                        UriComponentsBuilder.fromUriString(baseUrl)
+                                .queryParam("path", filePath)
+                                .build().toUri()
+                )
+                .header("Authorization", "OAuth " + token)
+                .header("Content-Type", "application/json")
+                .build();
 
-    public void setToken(String token) {
-        this.token = token;
+        log.info("publicFile(): request.getUrl(): {}", request.getUrl());
+        ResponseEntity<Link> response = restTemplate.exchange(request, Link.class);
+        log.info("publicFile: status: {}", response.getStatusCode());
+        log.info("publicFile: Link {}", response.getBody());
+        if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
+            log.info("publicFile(): response.getBody().href(): {}", response.getBody().href());
+            String linkPublishFile = URLDecoder.decode(response.getBody().href());
+        log.info("publicFile(): linkPublishFile: {}", linkPublishFile);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "OAuth " + token);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<PublishFileResponse> responseEntity = restTemplate.exchange(
+                    linkPublishFile,
+                    HttpMethod.GET,
+                    entity,
+                    PublishFileResponse.class
+            );
+
+            if (responseEntity.getStatusCode().equals(HttpStatusCode.valueOf(200)))
+                return responseEntity.getBody().getPublic_url();
+            else
+                throw new RuntimeException("publicFile(): response.getStatusCode()=" + response.getStatusCode());
+        } else {
+            throw new RuntimeException("publicFile(): response.getStatusCode()=" + response.getStatusCode());
+        }
+
     }
-
-
 }
-
-
-//        RequestEntity<Void> requestDownload = RequestEntity.get(UriComponentsBuilder
-//                        .fromUriString(uri)
-//                        .path(href.split("\\?",2)[1].split("=")[1])
-//                        .build()
-//                        .toUri()
-//                ).header("Authorization", "OAuth " + token)
-//                .build();
-//
-//        ResponseEntity<byte[]> responseDownload = restTemplate.exchange(requestDownload, byte[].class);
-
-//        String contentDisposition = responseDownload.getHeaders().getFirst("Content-Disposition");
-//        System.out.println("contentDisposition = " + URLDecoder.decode(contentDisposition));
