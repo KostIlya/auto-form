@@ -7,6 +7,7 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -48,8 +49,9 @@ public class MainController {
         this.yandexProperties = yandexProperties;
     }
 
-    @Scheduled(fixedDelayString = "${current.polling_time_milliseconds}")
+    @Scheduled(fixedRateString = "${current.polling_time_milliseconds}")
     public void work() {
+        log.info("Run...");
         // получаю данные с формы
         List<AnswerDTO> answers = formService.getAnswersInLastSeconds(currentProperties.getPollingTimeMilliseconds() / 1000);
         List<String> tempFilesPaths = new ArrayList<>();
@@ -82,6 +84,7 @@ public class MainController {
         else {
             log.info("New answers is not.");
         }
+        log.info("Finish.");
     }
 
     private String uploadOneFileOnYandexDisk(String href, List<String> tempFilesPath) {
@@ -119,6 +122,7 @@ public class MainController {
         WebDriver webDriver = WebDriverFactory.createDriver();
         WebDriverWait webDriverWait = new WebDriverWait(webDriver, Duration.ofSeconds(30));
         webDriver.get(yandexTwoConfigProperties.getUrlDisk());
+        webDriverWait.until(ExpectedConditions.jsReturnsValue("return document.readyState === 'complete';"));
 //        seleniumService.loginYandexDisk(webDriver, webDriverWait);
         Actions actions = new Actions(webDriver);
 
