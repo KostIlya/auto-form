@@ -11,7 +11,7 @@ import java.util.List;
 public class FileService {
     public void deleteFile(List<String> filePaths) {
         try {
-            Thread.sleep(3000);
+            Thread.sleep(5000);
 
             for (var filePath : filePaths)
                 Files.delete(Paths.get(filePath));

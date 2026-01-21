@@ -22,7 +22,7 @@ import java.util.List;
 @Service
 @Slf4j
 public class DiskService {
-
+    private final String BASE_URL = "https://cloud-api.yandex.net/v1/disk/resources";
     @Value("${yandex.token}")
     private String token;
     @Autowired
@@ -48,7 +48,7 @@ public class DiskService {
     // Получение из пути path списка директорий
     private List<String> getDirs(String path) {
         List<String> dirs = Arrays.stream(path.split("/")).filter(s -> !s.isBlank()).toList();
-        log.info("dirs: {}", dirs);
+        log.debug("getDirs(): dirs: {}", dirs);
         return dirs;
     }
 
@@ -63,18 +63,15 @@ public class DiskService {
     }
 
     private boolean isExistDirectory(String path) {
-        final String baseUrl = "https://cloud-api.yandex.net/v1/disk/resources";
-        log.info("isExistDIR: {}", path);
         RequestEntity<Void> requestEntity = RequestEntity.get(
-                        UriComponentsBuilder.fromUriString(baseUrl)
+                        UriComponentsBuilder.fromUriString(BASE_URL)
                                 .queryParam("path", path)
                                 .build()
                                 .toUri()
                 ).header("Authorization", "OAuth " + token)
                 .build();
-        ResponseEntity<String> response;
         try {
-            response = restTemplate.exchange(requestEntity, String.class);
+            ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
 
             return response.getStatusCode().equals(HttpStatusCode.valueOf(200));
         } catch (RestClientException e) {
@@ -85,10 +82,8 @@ public class DiskService {
 
     // Создание конкретной директории
     private void createDirectory(String path, Boolean b) {
-        final String baseUrl = "https://cloud-api.yandex.net/v1/disk/resources";
-
         RequestEntity<Void> requestEntity = RequestEntity.put(
-                        UriComponentsBuilder.fromUriString(baseUrl)
+                        UriComponentsBuilder.fromUriString(BASE_URL)
                                 .queryParam("path", path)
                                 .build().toUri()
                 )
@@ -98,7 +93,7 @@ public class DiskService {
             ResponseEntity<String> exchange = restTemplate.exchange(requestEntity, String.class);
             HttpStatusCode statusCode = exchange.getStatusCode();
             if (statusCode.equals(HttpStatusCode.valueOf(201))) {
-                log.info("Successfully created folder: {}", path);
+                log.debug("Successfully created folder: {}", path);
             }
         } catch (Exception e) {
             log.error("Path {}: {}", path, e.getMessage());
@@ -112,10 +107,10 @@ public class DiskService {
             throw new NullPointerException("is or fullFileName is null");
         }
 
-        final String baseUrl = "https://cloud-api.yandex.net/v1/disk/resources/upload";
+        final String url = BASE_URL + "/upload";
 
         RequestEntity<Void> requestEntity = RequestEntity.get(
-                        UriComponentsBuilder.fromUriString(baseUrl)
+                        UriComponentsBuilder.fromUriString(url)
                                 .queryParam("path", fullFileName)
                                 .queryParam("overwrite", "true")
                                 .build()
@@ -143,7 +138,7 @@ public class DiskService {
         );
 
         if (responseToUpload.getStatusCode().is2xxSuccessful()) {
-            log.info("File is uploaded successfully");
+            log.debug("File \"{}\" is uploaded successfully", fullFileName);
         } else {
             throw new RuntimeException("File wasn't upload. HttpStatus: " + responseToUpload.getStatusCode() +
                     ". Body: " + responseToUpload.getBody());
@@ -152,7 +147,6 @@ public class DiskService {
 
     // Скачать файл по ссылке
     public String downloadFileFromYandexFormForLink(String href) throws IOException {
-        String baseUrl = "https://forms.yandex.ru/u/files";
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "OAuth " + token);
         headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
@@ -169,15 +163,7 @@ public class DiskService {
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new IOException("Error downloading file");
         }
-//        String contentDisposition = response.getHeaders().getFirst("Content-Disposition");
-//        log.warn("JSON STATUS CODE response download: {}", response.getStatusCode());
-//        log.warn("JSON HEADERS response download: {}", response.getHeaders());
-//        log.warn("JSON BODY response download: {}", response.getBody());
-//        //
-//        if (contentDisposition != null)
-//            log.info("contentDisposition = {}", URLDecoder.decode(contentDisposition));
-//        else
-//            log.error("contentDisposition = null");
+
         String[] p = href.split("\\?", 2)[1].split("=")[1].split("/");
         String filename = p[p.length - 1];
         String destination = currentProperties.getDownloadDir() + filename;
@@ -188,15 +174,15 @@ public class DiskService {
             log.error(e.getMessage());
         }
 
-        log.info("File is downloaded successfully to path: {}", destination);
+        log.debug("File is downloaded successfully to path: {}", destination);
         return destination;
     }
 
     // Скачать с яндекс диска
     public String download(String path) throws IOException {
-        final String baseUrl = "https://cloud-api.yandex.net/v1/disk/resources/download";
+        final String url = BASE_URL + "/download";
         RequestEntity<Void> requestEntity = RequestEntity.get(
-                        UriComponentsBuilder.fromUriString(baseUrl)
+                        UriComponentsBuilder.fromUriString(url)
                                 .queryParam("path", path)
                                 .build().toUri()
                 )
@@ -208,7 +194,6 @@ public class DiskService {
             throw new RuntimeException("Error during getting link");
         }
         String href = response.getBody().href();
-        System.out.println(href);
 
         String linkkk = URLDecoder.decode(href);
         ResponseEntity<byte[]> responseDownload = restTemplate.exchange(
@@ -218,9 +203,6 @@ public class DiskService {
                 byte[].class
         );
 
-        String projectRoot = System.getProperty("user.dir");
-        String resourcesPath = projectRoot + "/src/main/resources/files/download/";
-
         String filename = Arrays.stream(href.split("&"))
                 .filter((s) -> s.startsWith("filename="))
                 .map(s -> s.split("=")[1])
@@ -229,17 +211,16 @@ public class DiskService {
         try (FileOutputStream fos = new FileOutputStream(filePath)) {
             fos.write(responseDownload.getBody());
         } catch (Exception e) {
-            System.out.println("Folder not found: " + e.getMessage());
+            log.error("Folder not found: {}", e.getMessage());
         }
 
         return filePath;
     }
 
     public String publicFile(String filePath) {
-//        String line;
-        String baseUrl = "https://cloud-api.yandex.net/v1/disk/resources/publish";
+        String url = BASE_URL + "/publish";
         RequestEntity<Void> request = RequestEntity.put(
-                        UriComponentsBuilder.fromUriString(baseUrl)
+                        UriComponentsBuilder.fromUriString(url)
                                 .queryParam("path", filePath)
                                 .build().toUri()
                 )
@@ -247,14 +228,9 @@ public class DiskService {
                 .header("Content-Type", "application/json")
                 .build();
 
-        log.info("publicFile(): request.getUrl(): {}", request.getUrl());
         ResponseEntity<Link> response = restTemplate.exchange(request, Link.class);
-        log.info("publicFile: status: {}", response.getStatusCode());
-        log.info("publicFile: Link {}", response.getBody());
         if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
-            log.info("publicFile(): response.getBody().href(): {}", response.getBody().href());
             String linkPublishFile = URLDecoder.decode(response.getBody().href());
-        log.info("publicFile(): linkPublishFile: {}", linkPublishFile);
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "OAuth " + token);
             HttpEntity<Void> entity = new HttpEntity<>(headers);
@@ -266,10 +242,12 @@ public class DiskService {
                     PublishFileResponse.class
             );
 
-            if (responseEntity.getStatusCode().equals(HttpStatusCode.valueOf(200)))
+            if (responseEntity.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
+                log.debug("The file \"{}\" has been published on Yandex.Disk", filePath);
                 return responseEntity.getBody().getPublic_url();
-            else
+            } else {
                 throw new RuntimeException("publicFile(): response.getStatusCode()=" + response.getStatusCode());
+            }
         } else {
             throw new RuntimeException("publicFile(): response.getStatusCode()=" + response.getStatusCode());
         }

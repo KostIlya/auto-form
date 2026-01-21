@@ -91,7 +91,7 @@ public class JsonService {
                     break;
             }
         } catch (Exception e) {
-            log.warn("Failed to parse field {}: {}", fieldId, e.getMessage());
+            log.error("Failed to parse field {}: {}", fieldId, e.getMessage());
         }
     }
 }

@@ -13,12 +13,12 @@ import java.io.File;
 @Getter
 public class CurrentConfigProperties {
     private String downloadDir;
-    private String surveyId;
     private Integer pollingTimeMilliseconds;
+    private String separator = File.separator;
 
     public String getDownloadDir() {
-        if (!downloadDir.endsWith(File.separator))
-            return downloadDir + File.separator;
+        if (!downloadDir.endsWith(separator))
+            return downloadDir + separator;
         return downloadDir;
     }
 }

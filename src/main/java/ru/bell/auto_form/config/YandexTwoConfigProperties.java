@@ -8,10 +8,9 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 @Getter
 @Configuration
-@ConfigurationProperties(prefix="yandex")
-public class YandexConfigProperties {
-    private String token;
-    private String filesDirectory;
-    private String tableAnswersName;
-    private String surveyId;
+@ConfigurationProperties(prefix="yandex-two")
+public class YandexTwoConfigProperties {
+    private String urlDisk;
+    private String login;
+    private String password;
 }

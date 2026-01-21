@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.bell.auto_form.config.CurrentConfigProperties;
+import ru.bell.auto_form.config.YandexConfigProperties;
 import ru.bell.auto_form.model.ExportRequest;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 import ru.bell.auto_form.model.record.ResultExport;
@@ -25,33 +26,31 @@ import java.util.*;
 @Service
 @Slf4j
 public class FormService {
-    @Value("${yandex.token}")
-    private String token;
-
-    @Autowired
-    private CurrentConfigProperties currentProperties;
-
-    @Autowired
+    private final YandexConfigProperties yandexConfigProperties;
     private final JsonService jsonService;
+
+    private final String BASE_URL;
 
     private final RestTemplate restTemplate;
 
-    public FormService(RestTemplate restTemplate, JsonService jsonService) {
+    public FormService(RestTemplate restTemplate, JsonService jsonService, YandexConfigProperties yandexConfigProperties) {
         this.restTemplate = restTemplate;
         this.jsonService = jsonService;
+        this.yandexConfigProperties = yandexConfigProperties;
+        this.BASE_URL = "https://api.forms.yandex.net/v1/surveys/"
+                + yandexConfigProperties.getSurveyId()
+                + "/answers";
     }
 
     public List<AnswerDTO> getAnswersInLastSeconds(Integer seconds) {
-        final String baseUrl = "https://api.forms.yandex.net/v1/surveys/"
-                + currentProperties.getSurveyId()
-                + "/answers/export";
+        final String url = BASE_URL + "/export";
 
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "OAuth " + token);
+            headers.set("Authorization", "OAuth " + yandexConfigProperties.getToken());
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(baseUrl);
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url);
 
             ZonedDateTime endTime = ZonedDateTime.now(ZoneOffset.UTC);
             ZonedDateTime startTime = endTime.minusSeconds(seconds);
@@ -100,13 +99,12 @@ public class FormService {
     }
 
     private List<AnswerDTO> getAnswers(String id) {
-        final String baseUrl = "https://api.forms.yandex.net/v1/surveys/"
-                + currentProperties.getSurveyId()
-                + "/answers/export-results";
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "OAuth " + token);
+        final String url = BASE_URL +  "/export-results";
 
-        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(baseUrl).queryParam("task_id", id);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "OAuth " + yandexConfigProperties.getToken());
+
+        UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url).queryParam("task_id", id);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
@@ -179,7 +177,7 @@ public class FormService {
         } catch (Exception e) {
             throw new RuntimeException("getIdFromCsvResponse: " + e.getMessage());
         }
-        log.info("getIdFromCsvResponse(): ids: {}", ids);
+        log.debug("getIdFromCsvResponse(): ids: {}", ids);
         return ids;
     }
 
@@ -187,7 +185,7 @@ public class FormService {
         final String baseUrl = "https://api.forms.yandex.net/v1/answers";
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "OAuth " + token);
+            headers.set("Authorization", "OAuth " + yandexConfigProperties.getToken());
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(baseUrl)
                     .queryParam("answer_id", id);
 
@@ -207,43 +205,3 @@ public class FormService {
     }
 
 }
-
-
-
-//        ResponseEntity<String> response = restTemplate.exchange(
-//                uriBuilder.toUriString(),
-//                HttpMethod.GET,
-//                entity,
-//                String.class
-//        );
-//        String responseBody = response.getBody();
-
-//        String status = "wait";
-//        ResponseEntity<String> response = null;
-//        while (status.equals("wait")) {
-//            response = restTemplate.exchange(
-//                    uriBuilder.toUriString(),
-//                    HttpMethod.GET,
-//                    entity,
-//                    String.class
-//            );
-//            if (!response.getStatusCode().is2xxSuccessful()) {
-//                throw new RuntimeException("getAnswers(): response.getStatusCode() = " + response.getStatusCode());
-//            }
-//            String responseBody = response.getBody();
-//            ObjectMapper mapper = new ObjectMapper();
-//            JsonNode jsonNode = mapper.readTree(responseBody);
-//            status = jsonNode.get("status").asText();
-//            log.info(response.getBody());
-//            try {
-//                Thread.sleep(2000);
-//            } catch (InterruptedException e) {
-//                throw new RuntimeException(e.getMessage());
-//            }
-//            if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
-//                break;
-//            }
-//            if (status.equals("not_running") || status.equals("fail")) {
-//                throw new RuntimeException("getAnswersInLastSeconds: Status export is " + status);
-//            }
-//        }
