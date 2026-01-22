@@ -91,7 +91,7 @@ public class MainController {
         try {
             String filePath = diskService.downloadFileFromYandexFormForLink(href);
             // загружаю файлы на яндекс диск
-            String filename = filePath.substring(filePath.lastIndexOf('\\') + 1);
+            String filename = new File(filePath).getName();
 
             String fullFileName = yandexProperties.getFilesDirectory() + "/" + filename;
             try (InputStream is = new FileInputStream(filePath)) {
