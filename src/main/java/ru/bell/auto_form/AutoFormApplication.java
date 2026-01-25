@@ -13,7 +13,7 @@ public class AutoFormApplication {
         ConfigurableApplicationContext context = SpringApplication.run(AutoFormApplication.class, args);
         YandexConfigProperties yandexConfigProperties = context.getBean(YandexConfigProperties.class);
         DiskService yandexDiskService = context.getBean(DiskService.class);
-        yandexDiskService.createDirectory(yandexConfigProperties.getFilesDirectory());
+//        yandexDiskService.createDirectory(yandexConfigProperties.getFilesDirectory());
     }
 }
 

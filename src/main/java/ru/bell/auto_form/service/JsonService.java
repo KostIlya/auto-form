@@ -2,6 +2,7 @@ package ru.bell.auto_form.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.bell.auto_form.model.ResponseToken;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 import ru.bell.auto_form.model.AnswerData;
 import ru.bell.auto_form.model.AnswerFileValue;
@@ -25,6 +26,16 @@ public class JsonService {
             AnswerResponse answerResponse = objectMapper.readValue(jsonString, AnswerResponse.class);
             return convertToAnswer(answerResponse);
         } catch (Exception e) {
+            log.error("parseJsonToAnswer(): {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public ResponseToken parseJsonToResponseToken(String jsonString) {
+        try {
+            return objectMapper.readValue(jsonString, ResponseToken.class);
+        } catch (Exception e) {
+            log.error("parseJsonToResponseToken(): {}", e.getMessage());
             throw new RuntimeException(e);
         }
     }
