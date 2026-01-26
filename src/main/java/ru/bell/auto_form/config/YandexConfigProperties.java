@@ -10,7 +10,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix="yandex")
 public class YandexConfigProperties {
-    private String token;
+    private String clientId;
+    private String secretClientId;
+    private String redirectUri;
     private String filesDirectory;
     private String tableAnswersName;
     private String surveyId;

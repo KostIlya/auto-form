@@ -10,23 +10,30 @@ import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import ru.bell.auto_form.config.CurrentConfigProperties;
 import ru.bell.auto_form.config.WebDriverFactory;
 import ru.bell.auto_form.config.YandexConfigProperties;
 import ru.bell.auto_form.config.YandexTwoConfigProperties;
+import ru.bell.auto_form.exception.CriticalException;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 import ru.bell.auto_form.service.*;
+import ru.bell.auto_form.storage.TokenStorage;
 
 import java.io.*;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Controller
 @Slf4j
 public class MainController {
+    @Autowired
+    private TokenService tokenService;
     @Autowired
     private DiskService diskService;
     @Autowired
@@ -41,9 +48,14 @@ public class MainController {
     private final YandexConfigProperties yandexProperties;
     @Autowired
     private final CurrentConfigProperties currentProperties;
+    @Autowired
+    private TokenStorage tokenStorage;
+    @Autowired
+    private ApplicationContext context;
 
     @Autowired
     private YandexTwoConfigProperties yandexTwoConfigProperties;
+
     public MainController(CurrentConfigProperties currentProperties, YandexConfigProperties yandexProperties) {
         this.currentProperties = currentProperties;
         this.yandexProperties = yandexProperties;
@@ -51,13 +63,16 @@ public class MainController {
 
     @Scheduled(fixedRateString = "${current.polling_time_milliseconds}")
     public void work() {
-        log.info("Run...");
-        // получаю данные с формы
-        List<AnswerDTO> answers = formService.getAnswersInLastSeconds(currentProperties.getPollingTimeMilliseconds() / 1000);
         List<String> tempFilesPaths = new ArrayList<>();
-        Integer countAnswersRecordings = 0;
-        // скачиваю файлы из ответов
         try {
+            checkToken();
+
+            log.info("Run...");
+            // получаю данные с формы
+            List<AnswerDTO> answers = formService.getAnswersInLastSeconds(currentProperties.getPollingTimeMilliseconds() / 1000);
+
+            Integer countAnswersRecordings = 0;
+            // скачиваю файлы из ответов
             for (AnswerDTO answer : answers) {
                 String fileNameResume = uploadOneFileOnYandexDisk(answer.getResume(), tempFilesPaths);
                 answer.setResume(diskService.publicFile(fileNameResume));
@@ -74,17 +89,37 @@ public class MainController {
                 countAnswersRecordings = fillXlsxFile(answers, filePath, fileName);
 
             executeSelenium();
+
+            if (countAnswersRecordings > 0)
+                log.info("New answers to the form have been recorded. There were {} answers recorded.", countAnswersRecordings);
+            else {
+                log.info("New answers is not.");
+            }
+        } catch (CriticalException e) {
+            log.error("work(): ", e);
+            int exitCode = SpringApplication.exit(context, () -> 1);
+            System.exit(exitCode);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error("work(): {}", e.toString());
         } finally {
             fileService.deleteFile(tempFilesPaths);
         }
-        if (countAnswersRecordings > 0)
-            log.info("New answers to the form have been recorded. There were {} answers recorded.", countAnswersRecordings);
-        else {
-            log.info("New answers is not.");
-        }
         log.info("Finish.");
+    }
+
+    private void checkToken() {
+        log.debug("checkToken(): run.");
+        while (tokenStorage == null || tokenStorage.getAccessToken() == null) {
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                log.error("checkToken(): {}", e.getMessage());
+            }
+        }
+        if (LocalDateTime.now().minusSeconds(currentProperties.getPollingTimeMilliseconds() / 1000).isAfter(tokenStorage.getExpiresAt())) {
+            tokenService.updateToken();
+        }
+        log.debug("checkToken(): finish.");
     }
 
     private String uploadOneFileOnYandexDisk(String href, List<String> tempFilesPath) {
@@ -140,7 +175,7 @@ public class MainController {
                 }
             }
         } catch (Exception e) {
-            log.error("work(): FileInputStream(filePathExcel): {}", e.getMessage());
+            log.error("executeSelenium(): FileInputStream(filePathExcel): {}", e.getMessage());
             throw new RuntimeException(e);
         }
 

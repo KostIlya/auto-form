@@ -13,6 +13,7 @@ import ru.bell.auto_form.config.YandexConfigProperties;
 import ru.bell.auto_form.model.ExportRequest;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 import ru.bell.auto_form.model.record.ResultExport;
+import ru.bell.auto_form.storage.TokenStorage;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -28,7 +29,8 @@ import java.util.*;
 public class FormService {
     private final YandexConfigProperties yandexConfigProperties;
     private final JsonService jsonService;
-
+    @Autowired
+    private TokenStorage tokenStorage;
     private final String BASE_URL;
 
     private final RestTemplate restTemplate;
@@ -47,7 +49,7 @@ public class FormService {
 
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "OAuth " + yandexConfigProperties.getToken());
+            headers.set("Authorization", "OAuth " + tokenStorage.getAccessToken());
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url);
@@ -102,7 +104,7 @@ public class FormService {
         final String url = BASE_URL +  "/export-results";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "OAuth " + yandexConfigProperties.getToken());
+        headers.set("Authorization", "OAuth " + tokenStorage.getAccessToken());
 
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url).queryParam("task_id", id);
         HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -185,7 +187,7 @@ public class FormService {
         final String baseUrl = "https://api.forms.yandex.net/v1/answers";
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "OAuth " + yandexConfigProperties.getToken());
+            headers.set("Authorization", "OAuth " + tokenStorage.getAccessToken());
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(baseUrl)
                     .queryParam("answer_id", id);
 
