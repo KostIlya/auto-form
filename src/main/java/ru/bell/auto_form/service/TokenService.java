@@ -9,10 +9,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.bell.auto_form.config.YandexConfigProperties;
+import ru.bell.auto_form.exception.CriticalException;
 import ru.bell.auto_form.model.ResponseToken;
 import ru.bell.auto_form.storage.TokenStorage;
 
@@ -44,17 +47,19 @@ public class TokenService {
         return uriBuilder.toUriString();
     }
 
-    public void getTokenByCode(String code) {
+    public void getTokenByCode(String code) throws CriticalException {
+        log.debug("getTokenByCode()");
         if (code != null && !code.isBlank()) {
             setToken("authorization_code", "code", code);
         } else {
             String error = "getTokenByCode(): code is null";
             log.error(error);
-            throw new RuntimeException(error);
+            throw new CriticalException(error);
         }
     }
 
-    public void updateToken() {
+    public void updateToken() throws CriticalException {
+        log.debug("updateToken()");
         if (tokenStorage != null && tokenStorage.getRefreshToken() != null)
             setToken("refresh_token", "refresh_token", tokenStorage.getRefreshToken());
         else {
@@ -65,11 +70,11 @@ public class TokenService {
                 error = "updateToken(): tokenStorage.getRefreshToken() is null.";
             }
             log.error(error);
-            throw new RuntimeException(error);
+            throw new CriticalException(error);
         }
     }
 
-    private void setToken(String grant_type, String param, String value) {
+    private void setToken(String grant_type, String param, String value) throws CriticalException {
         String uriBase = URI_BASE + "/token";
 
         HttpHeaders headers = new HttpHeaders();
@@ -83,16 +88,23 @@ public class TokenService {
 
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(requestBodyMap, headers);
         log.debug("setToken(): uriBuilder: {}", uriBase);
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(uriBase, HttpMethod.POST, entity, String.class);
+            log.debug("setToken(): responseStatusCode: {}", response.getStatusCode());
+            log.debug("setToken(): responseHeaders: {}", response.getHeaders());
+            log.debug("setToken(): responseBody: {}", response.getBody());
 
-        ResponseEntity<String> response = restTemplate.exchange(uriBase, HttpMethod.POST, entity, String.class);
-        log.debug("setToken(): responseStatusCode: {}", response.getStatusCode());
-        log.debug("setToken(): responseHeaders: {}", response.getHeaders());
-        log.debug("setToken(): responseBody: {}", response.getBody());
+            ResponseToken responseToken = jsonService.parseJsonToResponseToken(response.getBody());
+            log.debug("setToken(): responseToken: {}", responseToken);
 
-        ResponseToken responseToken = jsonService.parseJsonToResponseToken(response.getBody());
-        log.debug("setToken(): responseToken: {}", responseToken);
-
-        tokenStorage.setToken(responseToken);
-        log.debug("setToken(): tokenStorage: {}", tokenStorage);
+            tokenStorage.setToken(responseToken);
+            log.debug("setToken(): tokenStorage: {}", tokenStorage);
+        } catch(HttpClientErrorException e) {
+            log.error("setToken(): status: {}, body: {}", e.getStatusText(), e.getResponseBodyAsString());
+            throw new CriticalException(e);
+        } catch (RestClientException e) {
+            log.error("setToken(): {}", e.getMessage());
+            throw new CriticalException(e);
+        }
     }
 }

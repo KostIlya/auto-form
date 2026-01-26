@@ -19,7 +19,7 @@ public class XlsxService {
     public Integer appendAnswers(List<AnswerDTO> answers, String filePath) {
         Integer countAnswersRecordings = 0;
         try (FileInputStream file = new FileInputStream(filePath);
-            Workbook workbook = WorkbookFactory.create(file)) {
+             Workbook workbook = WorkbookFactory.create(file)) {
             Sheet sheet = workbook.getSheetAt(0);
 
             Set<String> existAnswersIds = getAllExistsAnswersIds(sheet);
@@ -96,7 +96,7 @@ public class XlsxService {
                 .id(getStringCellValue(row, 0))
                 .createdAt(ZonedDateTime.parse(getStringCellValue(row, 1)))
                 .fio(getStringCellValue(row, 2))
-                .age((int)row.getCell(3).getNumericCellValue())
+                .age((int) row.getCell(3).getNumericCellValue())
                 .location(getStringCellValue(row, 4))
                 .telegram(getStringCellValue(row, 5))
                 .email(getStringCellValue(row, 6))
