@@ -1,5 +1,6 @@
 package ru.bell.auto_form.controller;
 
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -115,8 +116,16 @@ public class MainController {
         if (fileService.isExist(path) && fileService.isValidCsvWithYandexToken(path, separator)) {
             fileService.readYandexTokenFromCsvFile(path, yandexToken, separator);
 
-            if (LocalDateTime.now().minusSeconds(currentProperties.getPollingTimeMilliseconds() / 1000).isAfter(yandexToken.getExpiresAt())) {
-                tokenService.updateToken();
+            if (LocalDateTime.now().isAfter(yandexToken.getExpiresAt().minusMonths(5))) {
+                log.debug("checkToken(): try update token.");
+
+                try {
+                    tokenService.updateToken();
+                } catch (CriticalException e) {
+                    log.error("checkToken(): ", e);
+                    int exitCode = SpringApplication.exit(context, () -> 1);
+                    System.exit(exitCode);
+                }
             }
         } else {
             log.info("Please, go to the endpoint /auth/start to authorize the application in the OAuth.Yandex service.");

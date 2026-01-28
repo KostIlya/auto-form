@@ -30,7 +30,6 @@ public class CurrentConfigProperties {
 
     public void createTmpDir() {
         Path path = Paths.get("tmp");
-        log.debug("getTmpDir(): path: {}", path);
 
         if (!Files.exists(path)) {
             try {
