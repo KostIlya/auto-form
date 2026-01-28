@@ -2,7 +2,6 @@ package ru.bell.auto_form.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -169,7 +168,7 @@ public class DiskService {
 
         String[] p = href.split("\\?", 2)[1].split("=")[1].split("/");
         String filename = p[p.length - 1];
-        String destination = currentProperties.getDownloadDir() + filename;
+        String destination = currentProperties.getTmpDir() + filename;
 
         try (FileOutputStream fos = new FileOutputStream(destination)) {
             fos.write(response.getBody());
@@ -210,7 +209,7 @@ public class DiskService {
                 .filter((s) -> s.startsWith("filename="))
                 .map(s -> s.split("=")[1])
                 .findFirst().orElseThrow(() -> new RuntimeException("Error parse href for filename"));
-        String filePath = currentProperties.getDownloadDir() + filename;
+        String filePath = currentProperties.getTmpDir() + filename;
         try (FileOutputStream fos = new FileOutputStream(filePath)) {
             fos.write(responseDownload.getBody());
         } catch (Exception e) {

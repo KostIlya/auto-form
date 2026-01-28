@@ -174,7 +174,7 @@ public class MainController {
 
         WebElement cell = seleniumService.getCell(webDriver, webDriverWait);
         List<String> idsFromAnswers2 = seleniumService.getIds(actions, cell);
-        String filePathExcel = currentProperties.getDownloadDir() + yandexConfigProperties.getTableAnswersName();
+        String filePathExcel = currentProperties.getTmpDir() + yandexConfigProperties.getTableAnswersName();
         try (FileInputStream file = new FileInputStream(filePathExcel);
              Workbook workbook = WorkbookFactory.create(file)) {
             Sheet sheet = workbook.getSheetAt(0);

@@ -44,7 +44,7 @@ public class FileService {
     public void readYandexTokenFromCsvFile(String path, YandexToken yandexToken, String separator) {
         try {
             String[] words = Files.readString(Paths.get(path)).split(separator);
-            log.debug("readYandexTokenFromCsvFile(): {}", Files.readString(Paths.get(path)));
+
             yandexToken.setAccessToken(words[0]);
             yandexToken.setRefreshToken(words[1]);
             yandexToken.setExpiresAt(LocalDateTime.parse(words[2]));
