@@ -1,6 +1,7 @@
 package ru.bell.auto_form.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.websocket.WsExtensionParameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -17,7 +18,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import ru.bell.auto_form.config.YandexConfigProperties;
 import ru.bell.auto_form.exception.CriticalException;
 import ru.bell.auto_form.model.ResponseToken;
-import ru.bell.auto_form.storage.TokenStorage;
+import ru.bell.auto_form.model.YandexToken;
+import ru.bell.auto_form.model.mapper.TokenMapper;
 
 import java.nio.charset.StandardCharsets;
 
@@ -25,17 +27,20 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class TokenService {
     private final String URI_BASE = "https://oauth.yandex.ru";
-    private final TokenStorage tokenStorage;
+    private final YandexToken yandexToken;
     private final RestTemplate restTemplate;
     private final YandexConfigProperties yandexConfigProperties;
     private final JsonService jsonService;
-
+    private final FileService fileService;
+    private final TokenMapper tokenMapper;
     @Autowired
-    public TokenService(TokenStorage tokenStorage, RestTemplate restTemplate, YandexConfigProperties yandexConfigProperties, JsonService jsonService) {
-        this.tokenStorage = tokenStorage;
+    public TokenService(YandexToken yandexToken, RestTemplate restTemplate, YandexConfigProperties yandexConfigProperties, JsonService jsonService, FileService fileService, TokenMapper tokenMapper) {
+        this.yandexToken = yandexToken;
         this.restTemplate = restTemplate;
         this.yandexConfigProperties = yandexConfigProperties;
         this.jsonService = jsonService;
+        this.fileService = fileService;
+        this.tokenMapper = tokenMapper;
     }
 
     public String getUriToCodeRequest() {
@@ -60,11 +65,11 @@ public class TokenService {
 
     public void updateToken() throws CriticalException {
         log.debug("updateToken()");
-        if (tokenStorage != null && tokenStorage.getRefreshToken() != null)
-            setToken("refresh_token", "refresh_token", tokenStorage.getRefreshToken());
+        if (yandexToken != null && yandexToken.getRefreshToken() != null)
+            setToken("refresh_token", "refresh_token", yandexToken.getRefreshToken());
         else {
             String error;
-            if (tokenStorage == null)
+            if (yandexToken == null)
                 error = "updateToken(): tokenStorage is null.";
             else {
                 error = "updateToken(): tokenStorage.getRefreshToken() is null.";
@@ -97,8 +102,12 @@ public class TokenService {
             ResponseToken responseToken = jsonService.parseJsonToResponseToken(response.getBody());
             log.debug("setToken(): responseToken: {}", responseToken);
 
-            tokenStorage.setToken(responseToken);
-            log.debug("setToken(): tokenStorage: {}", tokenStorage);
+            tokenMapper.fromResponseTokenToYandexToken(responseToken);
+
+            fileService.fillCsvFileWithYandexToken(yandexConfigProperties.getCsvTokenPath(), yandexToken,
+                    yandexConfigProperties.getCsvSeparator());
+
+            log.debug("setToken(): yandexToken: {}", yandexToken.getAccessToken());
         } catch(HttpClientErrorException e) {
             log.error("setToken(): status: {}, body: {}", e.getStatusText(), e.getResponseBodyAsString());
             throw new CriticalException(e);

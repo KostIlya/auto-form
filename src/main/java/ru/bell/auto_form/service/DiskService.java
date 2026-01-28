@@ -10,8 +10,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.bell.auto_form.config.CurrentConfigProperties;
 import ru.bell.auto_form.model.PublishFileResponse;
+import ru.bell.auto_form.model.YandexToken;
 import ru.bell.auto_form.model.record.Link;
-import ru.bell.auto_form.storage.TokenStorage;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,7 +25,7 @@ import java.util.List;
 public class DiskService {
     private final String BASE_URL = "https://cloud-api.yandex.net/v1/disk/resources";
     @Autowired
-    private TokenStorage tokenStorage;
+    private YandexToken yandexToken;
     @Autowired
     private CurrentConfigProperties currentProperties;
     private final RestTemplate restTemplate;
@@ -70,7 +70,7 @@ public class DiskService {
                                 .build()
                                 .toUri()
                 )
-                .header("Authorization", "OAuth " + tokenStorage.getAccessToken())
+                .header("Authorization", "OAuth " + yandexToken.getAccessToken())
                 .build();
         try {
             ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
@@ -89,7 +89,7 @@ public class DiskService {
                                 .queryParam("path", path)
                                 .build().toUri()
                 )
-                .header("Authorization", "OAuth " + tokenStorage.getAccessToken())
+                .header("Authorization", "OAuth " + yandexToken.getAccessToken())
                 .build();
         try {
             ResponseEntity<String> exchange = restTemplate.exchange(requestEntity, String.class);
@@ -118,7 +118,7 @@ public class DiskService {
                                 .build()
                                 .toUri()
                 )
-                .header("Authorization", "OAuth " + tokenStorage.getAccessToken())
+                .header("Authorization", "OAuth " + yandexToken.getAccessToken())
                 .build();
 
         ResponseEntity<Link> linkResponseEntity = restTemplate.exchange(requestEntity, Link.class);
@@ -151,7 +151,7 @@ public class DiskService {
     // Скачать файл по ссылке
     public String downloadFileFromYandexFormForLink(String href) throws IOException {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "OAuth " + tokenStorage.getAccessToken());
+        headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
         headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
         headers.set("Accept", "application/json, text/plain, */*");
         headers.set("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
@@ -189,7 +189,7 @@ public class DiskService {
                                 .queryParam("path", path)
                                 .build().toUri()
                 )
-                .header("Authorization", "OAuth " + tokenStorage.getAccessToken())
+                .header("Authorization", "OAuth " + yandexToken.getAccessToken())
                 .build();
 
         ResponseEntity<Link> response = restTemplate.exchange(requestEntity, Link.class);
@@ -227,7 +227,7 @@ public class DiskService {
                                 .queryParam("path", filePath)
                                 .build().toUri()
                 )
-                .header("Authorization", "OAuth " + tokenStorage.getAccessToken())
+                .header("Authorization", "OAuth " + yandexToken.getAccessToken())
                 .header("Content-Type", "application/json")
                 .build();
 
@@ -235,7 +235,7 @@ public class DiskService {
         if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
             String linkPublishFile = URLDecoder.decode(response.getBody().href());
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "OAuth " + tokenStorage.getAccessToken());
+            headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
             ResponseEntity<PublishFileResponse> responseEntity = restTemplate.exchange(

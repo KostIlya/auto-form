@@ -8,12 +8,11 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-import ru.bell.auto_form.config.CurrentConfigProperties;
 import ru.bell.auto_form.config.YandexConfigProperties;
 import ru.bell.auto_form.model.ExportRequest;
+import ru.bell.auto_form.model.YandexToken;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 import ru.bell.auto_form.model.record.ResultExport;
-import ru.bell.auto_form.storage.TokenStorage;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -30,7 +29,7 @@ public class FormService {
     private final YandexConfigProperties yandexConfigProperties;
     private final JsonService jsonService;
     @Autowired
-    private TokenStorage tokenStorage;
+    private YandexToken yandexToken;
     private final String BASE_URL;
 
     private final RestTemplate restTemplate;
@@ -49,7 +48,7 @@ public class FormService {
 
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "OAuth " + tokenStorage.getAccessToken());
+            headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
             headers.setContentType(MediaType.APPLICATION_JSON);
 
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url);
@@ -104,7 +103,7 @@ public class FormService {
         final String url = BASE_URL +  "/export-results";
 
         HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "OAuth " + tokenStorage.getAccessToken());
+        headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
 
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url).queryParam("task_id", id);
         HttpEntity<String> entity = new HttpEntity<>(headers);
@@ -187,7 +186,7 @@ public class FormService {
         final String baseUrl = "https://api.forms.yandex.net/v1/answers";
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Authorization", "OAuth " + tokenStorage.getAccessToken());
+            headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(baseUrl)
                     .queryParam("answer_id", id);
 

@@ -19,9 +19,9 @@ import ru.bell.auto_form.config.WebDriverFactory;
 import ru.bell.auto_form.config.YandexConfigProperties;
 import ru.bell.auto_form.config.YandexTwoConfigProperties;
 import ru.bell.auto_form.exception.CriticalException;
+import ru.bell.auto_form.model.YandexToken;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 import ru.bell.auto_form.service.*;
-import ru.bell.auto_form.storage.TokenStorage;
 
 import java.io.*;
 import java.time.Duration;
@@ -45,20 +45,20 @@ public class MainController {
     @Autowired
     private SeleniumService seleniumService;
     @Autowired
-    private final YandexConfigProperties yandexProperties;
+    private final YandexConfigProperties yandexConfigProperties;
     @Autowired
     private final CurrentConfigProperties currentProperties;
     @Autowired
-    private TokenStorage tokenStorage;
+    private YandexToken yandexToken;
     @Autowired
     private ApplicationContext context;
 
     @Autowired
     private YandexTwoConfigProperties yandexTwoConfigProperties;
 
-    public MainController(CurrentConfigProperties currentProperties, YandexConfigProperties yandexProperties) {
+    public MainController(CurrentConfigProperties currentProperties, YandexConfigProperties yandexConfigProperties) {
         this.currentProperties = currentProperties;
-        this.yandexProperties = yandexProperties;
+        this.yandexConfigProperties = yandexConfigProperties;
     }
 
     @Scheduled(fixedRateString = "${current.polling_time_milliseconds}")
@@ -82,7 +82,8 @@ public class MainController {
             }
             // заполняю таблицу
 
-            String fileName = yandexProperties.getTableAnswersName().startsWith("/") ? yandexProperties.getTableAnswersName() : "/" + yandexProperties.getTableAnswersName().trim();
+            String fileName = yandexConfigProperties.getTableAnswersName().startsWith("/") ?
+                    yandexConfigProperties.getTableAnswersName() : "/" + yandexConfigProperties.getTableAnswersName().trim();
             String filePath = diskService.download(fileName);
             tempFilesPaths.add(filePath);
             if (!answers.isEmpty())
@@ -102,23 +103,33 @@ public class MainController {
         } catch (Exception e) {
             log.error("work(): {}", e.toString());
         } finally {
-            fileService.deleteFile(tempFilesPaths);
+            fileService.deleteFiles(tempFilesPaths);
         }
         log.info("Finish.");
     }
 
     private void checkToken() {
         log.debug("checkToken(): run.");
-        while (tokenStorage == null || tokenStorage.getAccessToken() == null) {
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                log.error("checkToken(): {}", e.getMessage());
+        String path = yandexConfigProperties.getCsvTokenPath();
+        String separator = yandexConfigProperties.getCsvSeparator();
+        if (fileService.isExist(path) && fileService.isValidCsvWithYandexToken(path, separator)) {
+            fileService.readYandexTokenFromCsvFile(path, yandexToken, separator);
+
+            if (LocalDateTime.now().minusSeconds(currentProperties.getPollingTimeMilliseconds() / 1000).isAfter(yandexToken.getExpiresAt())) {
+                tokenService.updateToken();
+            }
+        } else {
+            log.info("Please, go to the endpoint /auth/start to authorize the application in the OAuth.Yandex service.");
+            log.info("Wait...");
+            while (yandexToken == null || yandexToken.getAccessToken() == null) {
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException e) {
+                    log.error("checkToken(): {}", e.getMessage());
+                }
             }
         }
-        if (LocalDateTime.now().minusSeconds(currentProperties.getPollingTimeMilliseconds() / 1000).isAfter(tokenStorage.getExpiresAt())) {
-            tokenService.updateToken();
-        }
+
         log.debug("checkToken(): finish.");
     }
 
@@ -128,7 +139,7 @@ public class MainController {
             // загружаю файлы на яндекс диск
             String filename = new File(filePath).getName();
 
-            String fullFileName = yandexProperties.getFilesDirectory() + "/" + filename;
+            String fullFileName = yandexConfigProperties.getFilesDirectory() + "/" + filename;
             try (InputStream is = new FileInputStream(filePath)) {
                 diskService.upload(is, fullFileName);
             }
@@ -163,7 +174,7 @@ public class MainController {
 
         WebElement cell = seleniumService.getCell(webDriver, webDriverWait);
         List<String> idsFromAnswers2 = seleniumService.getIds(actions, cell);
-        String filePathExcel = currentProperties.getDownloadDir() + yandexProperties.getTableAnswersName();
+        String filePathExcel = currentProperties.getDownloadDir() + yandexConfigProperties.getTableAnswersName();
         try (FileInputStream file = new FileInputStream(filePathExcel);
              Workbook workbook = WorkbookFactory.create(file)) {
             Sheet sheet = workbook.getSheetAt(0);

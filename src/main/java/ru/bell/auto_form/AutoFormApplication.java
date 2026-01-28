@@ -5,13 +5,17 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import ru.bell.auto_form.config.YandexConfigProperties;
 import ru.bell.auto_form.service.DiskService;
+import ru.bell.auto_form.service.FileService;
 
 @SpringBootApplication
 public class AutoFormApplication {
 
     public static void main(String[] args) {
         ConfigurableApplicationContext context = SpringApplication.run(AutoFormApplication.class, args);
-//        YandexConfigProperties yandexConfigProperties = context.getBean(YandexConfigProperties.class);
+        YandexConfigProperties yandexConfigProperties = context.getBean(YandexConfigProperties.class);
+        FileService fileService = context.getBean(FileService.class);
+
+        fileService.createIfNotExistFile(yandexConfigProperties.getCsvTokenPath());
 //        DiskService yandexDiskService = context.getBean(DiskService.class);
 //        yandexDiskService.createDirectory(yandexConfigProperties.getFilesDirectory());
     }

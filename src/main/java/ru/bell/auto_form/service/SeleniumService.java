@@ -56,11 +56,9 @@ public class SeleniumService {
 
     public WebElement getCell(WebDriver driver, WebDriverWait wait) {
         wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(By.className("volga-frame")));
-        wait.until(ExpectedConditions.presenceOfElementLocated(By
-                .xpath("//textarea[@class='_Input_1u9t4_23' and @data-testid='main-area-input']")));
 
         return wait.until(ExpectedConditions.presenceOfElementLocated(
-                By.xpath("//textarea[@class='_Input_1u9t4_23' and @data-testid='main-area-input']")));
+                By.xpath("//textarea[@data-testid='main-area-input']")));
     }
 
     public List<String> getIds(Actions actions, WebElement cellEl) {

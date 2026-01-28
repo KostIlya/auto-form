@@ -16,4 +16,6 @@ public class YandexConfigProperties {
     private String filesDirectory;
     private String tableAnswersName;
     private String surveyId;
+    private String csvTokenPath = "tokenStorage.csv";
+    private String csvSeparator = ";";
 }
