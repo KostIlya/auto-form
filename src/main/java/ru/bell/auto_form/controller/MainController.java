@@ -72,7 +72,7 @@ public class MainController {
             // получаю данные с формы
             List<AnswerDTO> answers = formService.getAnswersInLastSeconds(currentProperties.getPollingTimeMilliseconds() / 1000);
 
-            Integer countAnswersRecordings = 0;
+            Integer countIntermediateAnswersRecordings = 0;
             // скачиваю файлы из ответов
             for (AnswerDTO answer : answers) {
                 String fileNameResume = uploadOneFileOnYandexDisk(answer.getResume(), tempFilesPaths);
@@ -87,16 +87,15 @@ public class MainController {
                     yandexConfigProperties.getTableAnswersName() : "/" + yandexConfigProperties.getTableAnswersName().trim();
             String filePath = diskService.download(fileName);
             tempFilesPaths.add(filePath);
-            if (!answers.isEmpty())
-                countAnswersRecordings = fillXlsxFile(answers, filePath, fileName);
 
-            executeSelenium();
-
-            if (countAnswersRecordings > 0)
-                log.info("New answers to the form have been recorded. There were {} answers recorded.", countAnswersRecordings);
-            else {
-                log.info("New answers is not.");
+            if (!answers.isEmpty()) {
+                countIntermediateAnswersRecordings = fillXlsxFile(answers, filePath, fileName);
             }
+
+            Integer countAnswersRecordings = executeSelenium();
+
+            printResult("IntermediateTable", countIntermediateAnswersRecordings);
+            printResult("ResultTable", countAnswersRecordings);
         } catch (CriticalException e) {
             log.error("work(): ", e);
             int exitCode = SpringApplication.exit(context, () -> 1);
@@ -173,7 +172,8 @@ public class MainController {
         return countAnswersRecordings;
     }
 
-    private void executeSelenium() {
+    private Integer executeSelenium() {
+        Integer count = 0;
         WebDriver webDriver = WebDriverFactory.createDriver();
         WebDriverWait webDriverWait = new WebDriverWait(webDriver, Duration.ofSeconds(30));
         webDriver.get(yandexTwoConfigProperties.getUrlDisk());
@@ -192,6 +192,7 @@ public class MainController {
                 if (!idsFromAnswers2.contains(xlsxService.getId(sheet, i))) {
                     AnswerDTO answerDTO = xlsxService.getAnswerDTO(sheet, i);
                     seleniumService.addRow(answerDTO, actions, cell);
+                    count++;
                 }
             }
         } catch (Exception e) {
@@ -200,5 +201,15 @@ public class MainController {
         }
 
         WebDriverFactory.closeDriver(webDriver);
+        return count;
+    }
+
+    private void printResult(String nameTable, Integer countAnswersRecordings) {
+        if (countAnswersRecordings > 0)
+            log.info("{}: New answers to the form have been recorded. There were {} answers recorded.",
+                    nameTable, countAnswersRecordings);
+        else {
+            log.info("{}: New answers is not.", nameTable);
+        }
     }
 }
