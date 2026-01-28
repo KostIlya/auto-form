@@ -28,8 +28,10 @@
 
 ## Регистрация приложения Яндекс для получения доступа к Яндекс.API по протоколу OAuth
 Инструкция по регистрации Яндекс приложения: https://yandex.ru/dev/id/doc/ru/register-auth
+
 На шаге 2 инструкции необходимо выбрать "Веб-сервисы", а также указать Redirect URI сервера, где запушен auto-form 
 с endpoint'ом /auth/back (например, http://localhost:8080/auth/back).
+
 На шаге 3 инструкции дать следующие доступы:
 * forms:read;
 * cloud_api:disk.read;
