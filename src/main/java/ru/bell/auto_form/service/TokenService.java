@@ -3,6 +3,7 @@ package ru.bell.auto_form.service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.websocket.WsExtensionParameter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -22,6 +23,7 @@ import ru.bell.auto_form.model.YandexToken;
 import ru.bell.auto_form.model.mapper.TokenMapper;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 
 @Service
 @Slf4j
@@ -33,14 +35,17 @@ public class TokenService {
     private final JsonService jsonService;
     private final FileService fileService;
     private final TokenMapper tokenMapper;
+    private final AppService appService;
     @Autowired
-    public TokenService(YandexToken yandexToken, RestTemplate restTemplate, YandexConfigProperties yandexConfigProperties, JsonService jsonService, FileService fileService, TokenMapper tokenMapper) {
+    public TokenService(YandexToken yandexToken, RestTemplate restTemplate, YandexConfigProperties yandexConfigProperties,
+                        JsonService jsonService, FileService fileService, TokenMapper tokenMapper, AppService appService) {
         this.yandexToken = yandexToken;
         this.restTemplate = restTemplate;
         this.yandexConfigProperties = yandexConfigProperties;
         this.jsonService = jsonService;
         this.fileService = fileService;
         this.tokenMapper = tokenMapper;
+        this.appService = appService;
     }
 
     public String getUriToCodeRequest() {
@@ -114,6 +119,69 @@ public class TokenService {
         } catch (RestClientException e) {
             log.error("setToken(): {}", e.getMessage());
             throw new CriticalException(e);
+        }
+    }
+
+    public void checkToken() {
+        log.debug("checkToken(): run.");
+        String path = yandexConfigProperties.getCsvTokenPath();
+        String separator = yandexConfigProperties.getCsvSeparator();
+        if (fileService.isExist(path) && fileService.isValidCsvWithYandexToken(path, separator)
+            && !LocalDateTime.now().isAfter(yandexToken.getExpiresAt())) {
+            if (LocalDateTime.now().isAfter(yandexToken.getExpiresAt().minusMonths(5))) {
+                log.debug("checkToken(): try update token.");
+
+                try {
+                    updateToken();
+                } catch (CriticalException e) {
+                    log.error("checkToken(): ", e);
+                    appService.exitWithCode(1);
+                }
+            }
+        } else {
+            waitCompleteAuthStart();
+        }
+
+        log.debug("checkToken(): finish.");
+    }
+
+    public void checkTokenOnStartup() {
+        log.debug("checkTokenOnStartup(): run.");
+
+        String path = yandexConfigProperties.getCsvTokenPath();
+        String separator = yandexConfigProperties.getCsvSeparator();
+        if (fileService.isExist(path) && fileService.isValidCsvWithYandexToken(path, separator)) {
+            fileService.readYandexTokenFromCsvFile(path, yandexToken, separator);
+
+            if (LocalDateTime.now().isBefore(yandexToken.getExpiresAt())) {
+                log.debug("checkTokenOnStartup(): try update token.");
+                try {
+                    updateToken();
+                } catch (CriticalException e) {
+                    log.error("checkTokenOnStartup(): ", e);
+                    appService.exitWithCode(1);
+                }
+            } else {
+                log.debug("checkTokenOnStartup(): the token has expired");
+                waitCompleteAuthStart();
+            }
+        } else {
+            log.debug("checkTokenOnStartup(): token doesn't exist yet.");
+            waitCompleteAuthStart();
+        }
+        log.debug("checkTokenOnStartup(): finish.");
+
+    }
+
+    public void waitCompleteAuthStart() {
+        log.info("Please, go to the endpoint /auth/start to authorize the application in the OAuth.Yandex service.");
+        log.info("Wait...");
+        while (yandexToken == null || yandexToken.getAccessToken() == null) {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                log.error("waitCompleteAuthStart(): {}", e.getMessage());
+            }
         }
     }
 }

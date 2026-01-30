@@ -18,6 +18,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -50,7 +51,7 @@ public class FormService {
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
             headers.setContentType(MediaType.APPLICATION_JSON);
-
+            log.debug("getAnswersInLastSeconds(): yandexToken: {}", yandexToken);
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url);
 
             ZonedDateTime endTime = ZonedDateTime.now(ZoneOffset.UTC);
@@ -68,6 +69,7 @@ public class FormService {
             ObjectMapper mapper = new ObjectMapper();
             String requestBodyJson = mapper.writeValueAsString(request);
 
+            log.debug("getAnswersInLastSeconds(): requestBodyJson: {}", requestBodyJson);
             HttpEntity<String> entity = new HttpEntity<>(requestBodyJson, headers);
 
             ResponseEntity<ResultExport> response = restTemplate.exchange(
@@ -163,6 +165,9 @@ public class FormService {
             answerDTOS.add(jsonService.parseJsonToAnswer(answerJson));
         }
 
+        for (var a : answerDTOS) {
+            a.setCreatedAt(a.getCreatedAt().withZoneSameInstant(ZoneId.of("Europe/Moscow")));
+        }
 
         return answerDTOS;
     }

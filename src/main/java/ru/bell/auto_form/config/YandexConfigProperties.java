@@ -14,7 +14,7 @@ public class YandexConfigProperties {
     private String secretClientId;
     private String redirectUri;
     private String filesDirectory;
-    private String tableAnswersName;
+    private String tableAnswersName = "/answers.xlsx";
     private String surveyId;
     private String csvTokenPath = "tokenStorage.csv";
     private String csvSeparator = ";";

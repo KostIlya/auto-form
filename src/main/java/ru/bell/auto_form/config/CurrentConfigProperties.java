@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 public class CurrentConfigProperties {
     private String tmpDir;
     private Integer pollingTimeMilliseconds;
+    private String templateAnswersTable1Path = "src/main/resources/files";
     private String separator = File.separator;
 
     @PostConstruct

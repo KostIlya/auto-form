@@ -1,6 +1,9 @@
 package ru.bell.auto_form.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
@@ -10,20 +13,30 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.bell.auto_form.config.CurrentConfigProperties;
+import ru.bell.auto_form.config.WebDriverFactory;
+import ru.bell.auto_form.config.YandexConfigProperties;
 import ru.bell.auto_form.config.YandexTwoConfigProperties;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 
+import java.io.FileInputStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @Slf4j
 public class SeleniumService {
-    @Autowired
     private final YandexTwoConfigProperties yandexTwoConfigProperties;
-
-    public SeleniumService(YandexTwoConfigProperties yandexTwoConfigProperties) {
+    private final XlsxService xlsxService;
+    private final YandexConfigProperties yandexConfigProperties;
+    private final CurrentConfigProperties currentProperties;
+    public SeleniumService(YandexTwoConfigProperties yandexTwoConfigProperties, XlsxService xlsxService,
+                           YandexConfigProperties yandexConfigProperties, CurrentConfigProperties currentProperties) {
         this.yandexTwoConfigProperties = yandexTwoConfigProperties;
+        this.xlsxService = xlsxService;
+        this.yandexConfigProperties = yandexConfigProperties;
+        this.currentProperties = currentProperties;
     }
 
     public void loginYandexDisk(WebDriver driver, WebDriverWait wait) {
@@ -124,5 +137,40 @@ public class SeleniumService {
     private void actionArrowRight(Actions actions) throws InterruptedException {
         actions.keyDown(Keys.ARROW_RIGHT).perform();
         Thread.sleep(200);
+    }
+
+    public Integer execute() {
+        Integer count = 0;
+        WebDriver webDriver = WebDriverFactory.createDriver();
+        WebDriverWait webDriverWait = new WebDriverWait(webDriver, Duration.ofSeconds(30));
+        webDriver.get(yandexTwoConfigProperties.getUrlDisk());
+        webDriverWait.until(ExpectedConditions.jsReturnsValue("return document.readyState === 'complete';"));
+//        loginYandexDisk(webDriver, webDriverWait);
+        Actions actions = new Actions(webDriver);
+
+        WebElement cell = getCell(webDriver, webDriverWait);
+        List<String> idsFromAnswers2 = getIds(actions, cell);
+        String tableAnswersName = yandexConfigProperties.getTableAnswersName().startsWith("/") ?
+                yandexConfigProperties.getTableAnswersName().substring(1)
+                : yandexConfigProperties.getTableAnswersName();
+        String filePathExcel = currentProperties.getTmpDir() + tableAnswersName;
+        try (FileInputStream file = new FileInputStream(filePathExcel);
+             Workbook workbook = WorkbookFactory.create(file)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            int countRows = sheet.getLastRowNum() + 1;
+            for (int i = 1; i < countRows; i++) {
+                if (!idsFromAnswers2.contains(xlsxService.getId(sheet, i))) {
+                    AnswerDTO answerDTO = xlsxService.getAnswerDTO(sheet, i);
+                    addRow(answerDTO, actions, cell);
+                    count++;
+                }
+            }
+        } catch (Exception e) {
+            log.error("executeSelenium(): FileInputStream(filePathExcel): {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+
+        WebDriverFactory.closeDriver(webDriver);
+        return count;
     }
 }

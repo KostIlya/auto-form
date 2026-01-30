@@ -8,10 +8,12 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.bell.auto_form.config.CurrentConfigProperties;
+import ru.bell.auto_form.config.YandexConfigProperties;
 import ru.bell.auto_form.model.PublishFileResponse;
 import ru.bell.auto_form.model.YandexToken;
 import ru.bell.auto_form.model.record.Link;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,17 +25,19 @@ import java.util.List;
 @Slf4j
 public class DiskService {
     private final String BASE_URL = "https://cloud-api.yandex.net/v1/disk/resources";
-    @Autowired
-    private YandexToken yandexToken;
-    @Autowired
-    private CurrentConfigProperties currentProperties;
+    private final YandexToken yandexToken;
+    private final CurrentConfigProperties currentProperties;
     private final RestTemplate restTemplate;
+    private final YandexConfigProperties yandexConfigProperties;
 
-    public DiskService(RestTemplate restTemplate) {
+    public DiskService(YandexToken yandexToken, CurrentConfigProperties currentProperties, RestTemplate restTemplate, YandexConfigProperties yandexConfigProperties) {
+        this.yandexToken = yandexToken;
+        this.currentProperties = currentProperties;
         this.restTemplate = restTemplate;
+        this.yandexConfigProperties = yandexConfigProperties;
     }
 
-    // Создание директории на яндекс диске
+    /// Создание директории на яндекс диске
     public void createDirectory(String path) {
         List<String> dirs = getDirs(path);
 
@@ -45,14 +49,14 @@ public class DiskService {
         }
     }
 
-    // Получение из пути path списка директорий
+    /// Получение из пути path списка директорий
     private List<String> getDirs(String path) {
         List<String> dirs = Arrays.stream(path.split("/")).filter(s -> !s.isBlank()).toList();
         log.debug("getDirs(): dirs: {}", dirs);
         return dirs;
     }
 
-    // Формирование пути текущей директории
+    /// Формирование пути текущей директории
     private String getCurrentDir(List<String> dirs, Integer numberDirectory) {
         StringBuilder res = new StringBuilder(numberDirectory);
         for (int i = 0; i < numberDirectory; i++) {
@@ -63,25 +67,10 @@ public class DiskService {
     }
 
     private boolean isExistDirectory(String path) {
-        RequestEntity<Void> requestEntity = RequestEntity.get(
-                        UriComponentsBuilder.fromUriString(BASE_URL)
-                                .queryParam("path", path)
-                                .build()
-                                .toUri()
-                )
-                .header("Authorization", "OAuth " + yandexToken.getAccessToken())
-                .build();
-        try {
-            ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
-
-            return response.getStatusCode().equals(HttpStatusCode.valueOf(200));
-        } catch (RestClientException e) {
-            log.error(e.getMessage());
-            return false;
-        }
+        return isExistResource(path);
     }
 
-    // Создание конкретной директории
+    /// Создание конкретной директории
     private void createDirectory(String path, Boolean b) {
         RequestEntity<Void> requestEntity = RequestEntity.put(
                         UriComponentsBuilder.fromUriString(BASE_URL)
@@ -101,8 +90,43 @@ public class DiskService {
         }
     }
 
-    // Загрузка на яндекс диск
-    // fullFileName - путь от корня яндекс диска до загружаемого файла(/dir1/file1.docx)
+    /// Создает файл на 1 яндекс диске, если он не существует
+    public void createFile(String path) {
+        if (!isExistFile(yandexConfigProperties.getTableAnswersName())) {
+            try (InputStream is = new FileInputStream(path)) {
+                upload(is, yandexConfigProperties.getTableAnswersName());
+            } catch (IOException e) {
+                log.error("createFile(): fail open file {}", path);
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public boolean isExistFile(String path) {
+        return isExistResource(path);
+    }
+
+    private boolean isExistResource(String path) {
+        RequestEntity<Void> requestEntity = RequestEntity.get(
+                        UriComponentsBuilder.fromUriString(BASE_URL)
+                                .queryParam("path", path)
+                                .build()
+                                .toUri()
+                )
+                .header("Authorization", "OAuth " + yandexToken.getAccessToken())
+                .build();
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
+
+            return response.getStatusCode().equals(HttpStatusCode.valueOf(200));
+        } catch (RestClientException e) {
+            log.error(e.getMessage());
+            return false;
+        }
+    }
+
+    /// Загрузка на яндекс диск
+    /// fullFileName - путь от корня яндекс диска до загружаемого файла(/dir1/file1.docx)
     public void upload(InputStream is, String fullFileName) throws IOException {
         if (is == null || fullFileName == null) {
             throw new NullPointerException("is or fullFileName is null");
@@ -147,7 +171,7 @@ public class DiskService {
         }
     }
 
-    // Скачать файл по ссылке
+    /// Скачать файл по ссылке
     public String downloadFileFromYandexFormForLink(String href) throws IOException {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
@@ -180,7 +204,7 @@ public class DiskService {
         return destination;
     }
 
-    // Скачать с яндекс диска
+    /// Скачать с яндекс диска
     public String download(String path) throws IOException {
         final String url = BASE_URL + "/download";
         RequestEntity<Void> requestEntity = RequestEntity.get(
