@@ -51,7 +51,6 @@ public class FormService {
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
             headers.setContentType(MediaType.APPLICATION_JSON);
-            log.debug("getAnswersInLastSeconds(): yandexToken: {}", yandexToken);
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url);
 
             ZonedDateTime endTime = ZonedDateTime.now(ZoneOffset.UTC);
@@ -69,8 +68,13 @@ public class FormService {
             ObjectMapper mapper = new ObjectMapper();
             String requestBodyJson = mapper.writeValueAsString(request);
 
+            log.debug("getAnswersInLastSeconds(): yandexToken: {}", yandexToken);
+
+            log.debug("getAnswersInLastSeconds(): uriBuilder: {}", uriBuilder.toUriString());
+            log.debug("getAnswersInLastSeconds(): headers: {}", headers);
             log.debug("getAnswersInLastSeconds(): requestBodyJson: {}", requestBodyJson);
             HttpEntity<String> entity = new HttpEntity<>(requestBodyJson, headers);
+            log.debug("getAnswersInLastSeconds(): entity: {}", entity);
 
             ResponseEntity<ResultExport> response = restTemplate.exchange(
                     uriBuilder.toUriString(),

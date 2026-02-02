@@ -115,6 +115,7 @@ public class DiskService {
                 )
                 .header("Authorization", "OAuth " + yandexToken.getAccessToken())
                 .build();
+        log.debug("isExistResource(): path: {}, requestEntity: {}", path, requestEntity);
         try {
             ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
 
@@ -158,7 +159,7 @@ public class DiskService {
                         .build()
                         .toUri()
         ).body(is.readAllBytes());
-
+        log.debug("upload(): requestToUpload: {}", requestToUpload);
         ResponseEntity<String> responseToUpload = restTemplate.exchange(
                 requestToUpload, String.class
         );
