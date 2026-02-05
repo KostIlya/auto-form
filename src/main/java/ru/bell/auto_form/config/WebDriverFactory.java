@@ -1,6 +1,6 @@
 package ru.bell.auto_form.config;
 
-import io.github.bonigarcia.wdm.WebDriverManager;
+//import io.github.bonigarcia.wdm.WebDriverManager;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 public class WebDriverFactory {
     public static WebDriver createDriver() {
         try {
-            WebDriverManager.chromedriver().setup();
+//            WebDriverManager.chromedriver().setup();
 
             ChromeOptions options = new ChromeOptions();
 //            options.addArguments("--headless");
