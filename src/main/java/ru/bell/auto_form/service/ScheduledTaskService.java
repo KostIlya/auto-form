@@ -18,10 +18,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 public class ScheduledTaskService {
+    private static final Integer DAYS_FOR_UPDATE_TOKEN = 10;
+
     @Setter
     private boolean state = false;
 
@@ -50,6 +53,13 @@ public class ScheduledTaskService {
         this.appService = appService;
     }
 
+    @Scheduled(initialDelay = DAYS_FOR_UPDATE_TOKEN, fixedRate = DAYS_FOR_UPDATE_TOKEN, timeUnit = TimeUnit.DAYS)
+    public void updateTokenEachTenDays() {
+        log.debug("Token is update after ten days.");
+        tokenService.checkToken();
+        log.info("Token is update after ten days is successful.");
+    }
+
     @Scheduled(fixedRateString = "${current.polling_time_milliseconds}")
     public void work() {
         while (!state) {
@@ -62,8 +72,6 @@ public class ScheduledTaskService {
 
         List<String> tempFilesPaths = new ArrayList<>();
         try {
-            tokenService.checkToken();
-
             log.info("Run...");
             // получаю данные с формы
             List<AnswerDTO> answers = formService.getAnswersInLastSeconds(currentProperties.getPollingTimeMilliseconds() / 1000);
