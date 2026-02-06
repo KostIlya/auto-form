@@ -88,9 +88,9 @@ public class ScheduledTaskService {
                 countIntermediateAnswersRecordings = fillXlsxFile(answers, filePath, fileName);
             }
 
+            printResult("IntermediateTable", countIntermediateAnswersRecordings);
             Integer countAnswersRecordings = seleniumService.execute();
 
-            printResult("IntermediateTable", countIntermediateAnswersRecordings);
             printResult("ResultTable", countAnswersRecordings);
         } catch (CriticalException e) {
             log.error("work(): ", e);
