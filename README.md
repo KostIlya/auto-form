@@ -81,7 +81,7 @@ wget -q -O /tmp/chromedriver.zip https://storage.googleapis.com/chrome-for-testi
 ## Запуск приложения
 Linux (Ubuntu):
 1. Установить свойства в application.properties или соответствующие переменные среды.
-2. Запустить команду mvn clean package -DskipTests
-3. java -jar target/auto-form-0.0.1.jar
+2. Собрать проект: `mvn clean package -DskipTests`
+3. Запустить приложение командой: `java -jar target/auto-form-0.0.1.jar`
 
 Если файл tokenStorage.csv пустой, перейти по endpoint /auth/start и предоставить приложению доступ к данным 1 аккаунта Яндекс.
