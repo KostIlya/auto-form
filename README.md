@@ -34,25 +34,31 @@
 * Chrome Driver.
 
 ## Команды для установки Google Chrome и Chrome Driver (Ubuntu 24.04.3 LTS)
-На данный момент стабильные версии Google Chrome - 144.0.7559.132, Chrome Driver - 144.0.7559.133. Версии Google Chrome и Chrome Driver должны быть соответствующие.
+На данный момент стабильные версии Google Chrome - 145.0.7632.46, Chrome Driver - 145.0.7632.46. Версии Google Chrome и Chrome Driver должны быть соответствующие.
 
 ```bash
-apt-get update -qqy \
-    && apt-get -qqy install gpg unzip \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update -qqy \
-    && apt-get -qqy install google-chrome-stable \
-    && rm /etc/apt/sources.list.d/google-chrome.list \
-    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* \
-    && sed -i 's/"$HERE\/chrome"/"$HERE\/chrome" --no-sandbox/g' /opt/google/chrome/google-chrome
+curl -O "https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.46/linux64/chrome-headless-shell-linux64.zip"
+unzip chrome-headless-shell-linux64.zip
+sudo mv /tmp/chrome-headless-shell-linux64 /usr/local/bin
+sudo ln -s /usr/local/bin/chrome-headless-shell-linux64/chrome-headless-shell /usr/local/bin/google-chrome
+sudo apt-get update && sudo apt-get install -y \
+    libatk1.0-0t64 \
+    libatk-bridge2.0-0t64 \
+    libgtk-3-0t64 \
+    libgdk-pixbuf2.0-0 \
+    libasound2t64 \
+    libnss3 \
+    libxss1 \
+    libfontconfig1 \
+    libdbus-1-3
+sudo apt-get install libgbm1
 ```
 
 ```bash
-wget -q -O /tmp/chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/144.0.7559.133/linux64/chromedriver-linux64.zip \
-    && unzip /tmp/chromedriver.zip -d /opt \
-    && rm /tmp/chromedriver.zip \
-    && ln -s /opt/chromedriver-linux64/chromedriver /usr/bin/chromedriver
+cd /tmp
+curl -O "https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.46/linux64/chromedriver-linux64.zip"
+unzip chromedriver-linux64.zip
+sudo mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/
 ```
 
 ## Регистрация приложения Яндекс для получения доступа к Яндекс.API по протоколу OAuth
