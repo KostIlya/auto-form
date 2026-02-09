@@ -82,7 +82,7 @@ sudo mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/
 | yandex.files_directory            | YANDEX_FILES_DIRECTORY            | путь до директории на Яндекс.Диске на 1 аккаунте Яндекса, где будут хранится файлы (резюме и опросник) из ответов к Яндекс.Форме, который должен быть записан относительно корня Яндекс.Диска | /foldir                              |
 | yandex.csv_token_path             | CSV_TOKEN_PATH                    | абсолютный путь до файла tokenStorage.csv                                                                                                                                                     | /home/$USER/data/tokenStorage.csv    |
 | yandex-two.url_disk               | YANDEX_TWO_URL_DISK               | url адрес до Яндекс.Таблицы на 2 аккаунте Яндекса, ссылка должна быть доступна для редактирования не авторизированным пользователем                                                           |                                      |
-| current.polling_time_milliseconds | CURRENT_POLLING_TIME_MILLISECONDS | период с которым запуска программа в миллисекундах                                                                                                                                            | 43200000                             |
+| current.polling_time_milliseconds | CURRENT_POLLING_TIME_MILLISECONDS | период, с которым программа запускается в миллисекундах                                                                                                                                            | 43200000                             |
 
 ## Запуск приложения
 Linux (Ubuntu):
