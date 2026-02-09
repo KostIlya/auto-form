@@ -10,9 +10,9 @@
 	</parent>
 	<groupId>ru.bell</groupId>
 	<artifactId>auto-form</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>auto-form</name>
-	<description>Demo project for Spring Boot</description>
+    <description/>
 	<url/>
 	<licenses>
 		<license/>

@@ -2,16 +2,12 @@ package ru.bell.auto_form.runner;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
 import org.springframework.stereotype.Component;
 import ru.bell.auto_form.config.CurrentConfigProperties;
 import ru.bell.auto_form.config.YandexConfigProperties;
-import ru.bell.auto_form.exception.CriticalException;
-import ru.bell.auto_form.model.YandexToken;
 import ru.bell.auto_form.service.*;
 
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
 
 @Component
 @Slf4j
@@ -36,7 +32,7 @@ public class StartupRunner implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        log.debug("run(): create if not exist Csv file with Token");
+        log.debug("run(): create if not exist csv file with Token");
         fileService.createIfNotExistFile(yandexConfigProperties.getCsvTokenPath());
         log.debug("run(): check token");
         tokenService.checkTokenOnStartup();

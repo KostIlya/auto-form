@@ -6,10 +6,7 @@ import ru.bell.auto_form.model.ResponseToken;
 import ru.bell.auto_form.model.YandexToken;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.OpenOption;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,9 +14,18 @@ import java.util.List;
 @Slf4j
 public class FileService {
     public void createIfNotExistFile(String path) {
+        Path filePath = Paths.get(path);
+        Path parentDir = filePath.getParent();
+
         try {
-            if (!isExist(path))
-                Files.createFile(Paths.get(path));
+            if (parentDir != null && !isExist(parentDir.toString())) {
+                Files.createDirectories(parentDir);
+                log.debug("createIfNotExistFile: created parent directory: {}", parentDir);
+            }
+            if (!isExist(path)) {
+                Files.createFile(filePath);
+                log.debug("createIfNotExistFile: created file: {}", filePath);
+            }
         } catch (IOException e) {
             log.error("createFile: file {} has not been create", path);
             throw new RuntimeException(e);
