@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 @Slf4j
 public class ScheduledTaskService {
-    private static final Integer DAYS_FOR_UPDATE_TOKEN = 10;
+    private static final int DAYS_FOR_UPDATE_TOKEN = 10;
 
     @Setter
     private boolean state = false;
