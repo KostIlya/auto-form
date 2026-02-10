@@ -70,11 +70,12 @@ public class ScheduledTaskService {
             }
         }
 
+        int pollingIntervalMultiplier = 3;
         List<String> tempFilesPaths = new ArrayList<>();
         try {
             log.info("Run...");
             // получаю данные с формы
-            List<AnswerDTO> answers = formService.getAnswersInLastSeconds(currentProperties.getPollingTimeMilliseconds() / 1000);
+            List<AnswerDTO> answers = formService.getAnswersInLastSeconds(pollingIntervalMultiplier * (currentProperties.getPollingTimeMilliseconds() / 1000));
 
             Integer countIntermediateAnswersRecordings = 0;
             // скачиваю файлы из ответов

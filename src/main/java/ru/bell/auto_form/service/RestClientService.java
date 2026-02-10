@@ -20,15 +20,15 @@ public class RestClientService {
 
     ///
     @Retryable(retryFor = {ResourceAccessException.class},
-        maxAttempts = 5,
-        backoff = @Backoff(delay = 3000))
+        maxAttempts = 6,
+        backoff = @Backoff(delay = 8000))
     public <T, R> ResponseEntity<R> exchangeTwoParam(RequestEntity<T> requestEntity, Class<R> responseType) {
         return restTemplate.exchange(requestEntity, responseType);
     }
 
     @Retryable(retryFor = {ResourceAccessException.class},
-            maxAttempts = 5,
-            backoff = @Backoff(delay = 3000))
+            maxAttempts = 6,
+            backoff = @Backoff(delay = 8000))
     public <T, R>ResponseEntity<R> exchangeFourParam(String url, HttpMethod method, HttpEntity<T> httpEntity, Class<R> responseType) {
         return restTemplate.exchange(
                 url,
