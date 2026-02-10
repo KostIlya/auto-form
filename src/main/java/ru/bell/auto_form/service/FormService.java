@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.bell.auto_form.config.YandexConfigProperties;
 import ru.bell.auto_form.model.ExportRequest;
@@ -31,13 +30,10 @@ public class FormService {
     @Autowired
     private YandexToken yandexToken;
     private final String BASE_URL;
-
-    //private final RestTemplate restTemplate;
     private final RestClientService restClientService;
 
-    public FormService(/*RestTemplate restTemplate,*/ JsonService jsonService, YandexConfigProperties yandexConfigProperties, RestClientService restClientService) {
+    public FormService(JsonService jsonService, YandexConfigProperties yandexConfigProperties, RestClientService restClientService) {
         this.restClientService = restClientService;
-//        this.restTemplate = restTemplate;
         this.jsonService = jsonService;
         this.yandexConfigProperties = yandexConfigProperties;
         this.BASE_URL = "https://api.forms.yandex.net/v1/surveys/"
@@ -81,12 +77,6 @@ public class FormService {
                     HttpMethod.POST,
                     entity,
                     ResultExport.class);
-//            restTemplate.exchange(
-//                    uriBuilder.toUriString(),
-//                    HttpMethod.POST,
-//                    entity,
-//                    ResultExport.class
-//            );
 
             if (!response.getStatusCode().equals(HttpStatusCode.valueOf(202))) {
                 throw new RuntimeException("getAnswersInLastSeconds: Don't get export");
@@ -123,12 +113,6 @@ public class FormService {
                 HttpMethod.GET,
                 entity,
                 String.class);
-//        restTemplate.exchange(
-//                uriBuilder.toUriString(),
-//                HttpMethod.GET,
-//                entity,
-//                String.class
-//        );
         String responseBody = response.getBody();
         if (response.getStatusCode().equals(HttpStatusCode.valueOf(202))) {
             ObjectMapper mapper = new ObjectMapper();
@@ -144,12 +128,7 @@ public class FormService {
                         HttpMethod.GET,
                         entity,
                         String.class);
-//                restTemplate.exchange(
-//                        uriBuilder.toUriString(),
-//                        HttpMethod.GET,
-//                        entity,
-//                        String.class
-//                );
+
                 if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
                     break;
                 }
@@ -163,12 +142,7 @@ public class FormService {
                 HttpMethod.GET,
                 entity,
                 byte[].class);
-//        restTemplate.exchange(
-//                uriBuilder.toUriString(),
-//                HttpMethod.GET,
-//                entity,
-//                byte[].class
-//        );
+
         List<String> ids;
 
         if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
@@ -222,12 +196,6 @@ public class FormService {
                     HttpMethod.GET,
                     entity,
                     String.class);
-//            restTemplate.exchange(
-//                    uriBuilder.toUriString(),
-//                    HttpMethod.GET,
-//                    entity,
-//                    String.class
-//            );
 
             return response.getBody();
         } catch (Exception e) {

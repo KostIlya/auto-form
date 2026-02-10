@@ -28,7 +28,6 @@ import java.time.LocalDateTime;
 public class TokenService {
     private final String URI_BASE = "https://oauth.yandex.ru";
     private final YandexToken yandexToken;
-    //    private final RestTemplate restTemplate;
     private final RestClientService restClientService;
     private final YandexConfigProperties yandexConfigProperties;
     private final JsonService jsonService;
@@ -37,11 +36,10 @@ public class TokenService {
     private final AppService appService;
 
     @Autowired
-    public TokenService(YandexToken yandexToken, RestClientService restClientService, /*RestTemplate restTemplate,*/ YandexConfigProperties yandexConfigProperties,
+    public TokenService(YandexToken yandexToken, RestClientService restClientService, YandexConfigProperties yandexConfigProperties,
                         JsonService jsonService, FileService fileService, TokenMapper tokenMapper, AppService appService) {
         this.yandexToken = yandexToken;
         this.restClientService = restClientService;
-//        this.restTemplate = restTemplate;
         this.yandexConfigProperties = yandexConfigProperties;
         this.jsonService = jsonService;
         this.fileService = fileService;
@@ -101,7 +99,6 @@ public class TokenService {
         log.debug("setToken(): uriBuilder: {}", uriBase);
         try {
             ResponseEntity<String> response = restClientService.exchangeFourParam(uriBase, HttpMethod.POST, entity, String.class);
-            //restTemplate.exchange(uriBase, HttpMethod.POST, entity, String.class);
             log.debug("setToken(): responseStatusCode: {}", response.getStatusCode());
             log.debug("setToken(): responseHeaders: {}", response.getHeaders());
             log.debug("setToken(): responseBody: {}", response.getBody());

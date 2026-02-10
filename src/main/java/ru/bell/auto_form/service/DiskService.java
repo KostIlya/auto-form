@@ -27,14 +27,12 @@ public class DiskService {
     private final String BASE_URL = "https://cloud-api.yandex.net/v1/disk/resources";
     private final YandexToken yandexToken;
     private final CurrentConfigProperties currentProperties;
-    //private final RestTemplate restTemplate;
     private final YandexConfigProperties yandexConfigProperties;
     private final RestClientService restClientService;
 
-    public DiskService(YandexToken yandexToken, CurrentConfigProperties currentProperties, /*RestTemplate restTemplate,*/ YandexConfigProperties yandexConfigProperties, RestClientService restClientService) {
+    public DiskService(YandexToken yandexToken, CurrentConfigProperties currentProperties, YandexConfigProperties yandexConfigProperties, RestClientService restClientService) {
         this.yandexToken = yandexToken;
         this.currentProperties = currentProperties;
-        //this.restTemplate = restTemplate;
         this.yandexConfigProperties = yandexConfigProperties;
         this.restClientService = restClientService;
     }
@@ -83,7 +81,6 @@ public class DiskService {
                 .build();
         try {
             ResponseEntity<String> exchange = restClientService.exchangeTwoParam(requestEntity, String.class);
-//                    restTemplate.exchange(requestEntity, String.class);
             HttpStatusCode statusCode = exchange.getStatusCode();
             if (statusCode.equals(HttpStatusCode.valueOf(201))) {
                 log.debug("Successfully created folder: {}", path);
@@ -121,8 +118,6 @@ public class DiskService {
         log.debug("isExistResource(): path: {}, requestEntity: {}", path, requestEntity);
         try {
             ResponseEntity<String> response = restClientService.exchangeTwoParam(requestEntity, String.class);
-            ;
-//            restTemplate.exchange(requestEntity, String.class);
 
             return response.getStatusCode().equals(HttpStatusCode.valueOf(200));
         } catch (RestClientException e) {
@@ -151,7 +146,6 @@ public class DiskService {
                 .build();
 
         ResponseEntity<Link> linkResponseEntity = restClientService.exchangeTwoParam(requestEntity, Link.class);
-        //restTemplate.exchange(requestEntity, Link.class);
 
         if (!linkResponseEntity.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
             throw new RuntimeException("Href wasn't get. HttpStatus: " + linkResponseEntity.getStatusCode() +
@@ -167,7 +161,6 @@ public class DiskService {
         ).body(is.readAllBytes());
         log.debug("upload(): requestToUpload: {}", requestToUpload);
         ResponseEntity<String> responseToUpload = restClientService.exchangeTwoParam(requestToUpload, String.class);
-        //restTemplate.exchange(requestToUpload, String.class);
 
         if (responseToUpload.getStatusCode().is2xxSuccessful()) {
             log.debug("File \"{}\" is uploaded successfully", fullFileName);
@@ -188,12 +181,6 @@ public class DiskService {
         String linkk = URLDecoder.decode(href);
         ResponseEntity<byte[]> response = restClientService.exchangeFourParam(linkk, HttpMethod.GET, entity, byte[].class);
 
-//        restTemplate.exchange(
-//                linkk,
-//                HttpMethod.GET,
-//                entity,
-//                byte[].class
-//        );
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new IOException("Error downloading file");
         }
@@ -224,7 +211,7 @@ public class DiskService {
                 .build();
 
         ResponseEntity<Link> response = restClientService.exchangeTwoParam(requestEntity, Link.class);
-        //restTemplate.exchange(requestEntity, Link.class);
+
         if (!response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
             throw new RuntimeException("Error during getting link");
         }
@@ -232,12 +219,6 @@ public class DiskService {
 
         String linkkk = URLDecoder.decode(href);
         ResponseEntity<byte[]> responseDownload = restClientService.exchangeFourParam(linkkk, HttpMethod.GET, null, byte[].class);
-        //restTemplate.exchange(
-//                linkkk,
-//                HttpMethod.GET,
-//                null,
-//                byte[].class
-//        );
 
         String filename = Arrays.stream(href.split("&"))
                 .filter((s) -> s.startsWith("filename="))
@@ -265,7 +246,7 @@ public class DiskService {
                 .build();
 
         ResponseEntity<Link> response = restClientService.exchangeTwoParam(request, Link.class);
-        //restTemplate.exchange(request, Link.class);
+
         if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
             String linkPublishFile = URLDecoder.decode(response.getBody().href());
             HttpHeaders headers = new HttpHeaders();
@@ -274,12 +255,6 @@ public class DiskService {
 
             ResponseEntity<PublishFileResponse> responseEntity = restClientService
                     .exchangeFourParam(linkPublishFile, HttpMethod.GET, entity, PublishFileResponse.class);
-            //restTemplate.exchange(
-//                    linkPublishFile,
-//                    HttpMethod.GET,
-//                    entity,
-//                    PublishFileResponse.class
-//            );
 
             if (responseEntity.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
                 log.debug("The file \"{}\" has been published on Yandex.Disk", filePath);
