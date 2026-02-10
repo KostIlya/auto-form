@@ -20,7 +20,7 @@
 ## Глоссарий
 * 1 аккаунт Яндекс - аккаунт Яндекса, где расположена Яндекс.Форма и промежуточная Яндекс.Таблица. Кроме того, должен быть бизнес аккаунтом для доступа к API Яндекс.Форм;
 * 2 аккаунт Яндекс - аккаунт Яндекса, где расположена результирующая Яндекс.Таблица;
-* tokenStorage.csv - файл, в котором хранится токен, по умолчанию расположен в /opt/auto-form.
+* tokenStorage.csv - файл, в котором хранится токен, по умолчанию расположен в /home/$USER/data/.
 
 ## Endpoint
 * /auth/start - при первом запуске приложения, а также, когда файл tokenStorage.csv пуст, или 
@@ -37,6 +37,7 @@
 На данный момент стабильные версии Google Chrome - 145.0.7632.46, Chrome Driver - 145.0.7632.46. Версии Google Chrome и Chrome Driver должны быть соответствующие.
 
 ```bash
+cd /tmp
 curl -O "https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.46/linux64/chrome-headless-shell-linux64.zip"
 unzip chrome-headless-shell-linux64.zip
 sudo mv /tmp/chrome-headless-shell-linux64 /usr/local/bin
