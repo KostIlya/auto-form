@@ -3,7 +3,6 @@ package ru.bell.auto_form.service;
 import com.opencsv.CSVReader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -33,10 +32,12 @@ public class FormService {
     private YandexToken yandexToken;
     private final String BASE_URL;
 
-    private final RestTemplate restTemplate;
+    //private final RestTemplate restTemplate;
+    private final RestClientService restClientService;
 
-    public FormService(RestTemplate restTemplate, JsonService jsonService, YandexConfigProperties yandexConfigProperties) {
-        this.restTemplate = restTemplate;
+    public FormService(/*RestTemplate restTemplate,*/ JsonService jsonService, YandexConfigProperties yandexConfigProperties, RestClientService restClientService) {
+        this.restClientService = restClientService;
+//        this.restTemplate = restTemplate;
         this.jsonService = jsonService;
         this.yandexConfigProperties = yandexConfigProperties;
         this.BASE_URL = "https://api.forms.yandex.net/v1/surveys/"
@@ -76,12 +77,16 @@ public class FormService {
             HttpEntity<String> entity = new HttpEntity<>(requestBodyJson, headers);
             log.debug("getAnswersInLastSeconds(): entity: {}", entity);
 
-            ResponseEntity<ResultExport> response = restTemplate.exchange(
-                    uriBuilder.toUriString(),
+            ResponseEntity<ResultExport> response = restClientService.exchangeFourParam(uriBuilder.toUriString(),
                     HttpMethod.POST,
                     entity,
-                    ResultExport.class
-            );
+                    ResultExport.class);
+//            restTemplate.exchange(
+//                    uriBuilder.toUriString(),
+//                    HttpMethod.POST,
+//                    entity,
+//                    ResultExport.class
+//            );
 
             if (!response.getStatusCode().equals(HttpStatusCode.valueOf(202))) {
                 throw new RuntimeException("getAnswersInLastSeconds: Don't get export");
@@ -106,7 +111,7 @@ public class FormService {
     }
 
     private List<AnswerDTO> getAnswers(String id) {
-        final String url = BASE_URL +  "/export-results";
+        final String url = BASE_URL + "/export-results";
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
@@ -114,12 +119,16 @@ public class FormService {
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url).queryParam("task_id", id);
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(
-                uriBuilder.toUriString(),
+        ResponseEntity<String> response = restClientService.exchangeFourParam(uriBuilder.toUriString(),
                 HttpMethod.GET,
                 entity,
-                String.class
-        );
+                String.class);
+//        restTemplate.exchange(
+//                uriBuilder.toUriString(),
+//                HttpMethod.GET,
+//                entity,
+//                String.class
+//        );
         String responseBody = response.getBody();
         if (response.getStatusCode().equals(HttpStatusCode.valueOf(202))) {
             ObjectMapper mapper = new ObjectMapper();
@@ -131,12 +140,16 @@ public class FormService {
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e.getMessage());
                 }
-                response = restTemplate.exchange(
-                        uriBuilder.toUriString(),
+                response = restClientService.exchangeFourParam(uriBuilder.toUriString(),
                         HttpMethod.GET,
                         entity,
-                        String.class
-                );
+                        String.class);
+//                restTemplate.exchange(
+//                        uriBuilder.toUriString(),
+//                        HttpMethod.GET,
+//                        entity,
+//                        String.class
+//                );
                 if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
                     break;
                 }
@@ -146,12 +159,16 @@ public class FormService {
             }
         }
 
-        ResponseEntity<byte[]> responseCsv = restTemplate.exchange(
-                uriBuilder.toUriString(),
+        ResponseEntity<byte[]> responseCsv = restClientService.exchangeFourParam(uriBuilder.toUriString(),
                 HttpMethod.GET,
                 entity,
-                byte[].class
-        );
+                byte[].class);
+//        restTemplate.exchange(
+//                uriBuilder.toUriString(),
+//                HttpMethod.GET,
+//                entity,
+//                byte[].class
+//        );
         List<String> ids;
 
         if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
@@ -201,12 +218,16 @@ public class FormService {
 
             HttpEntity<?> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(
-                    uriBuilder.toUriString(),
+            ResponseEntity<String> response = restClientService.exchangeFourParam(uriBuilder.toUriString(),
                     HttpMethod.GET,
                     entity,
-                    String.class
-            );
+                    String.class);
+//            restTemplate.exchange(
+//                    uriBuilder.toUriString(),
+//                    HttpMethod.GET,
+//                    entity,
+//                    String.class
+//            );
 
             return response.getBody();
         } catch (Exception e) {

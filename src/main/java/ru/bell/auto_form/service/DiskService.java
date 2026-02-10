@@ -27,14 +27,16 @@ public class DiskService {
     private final String BASE_URL = "https://cloud-api.yandex.net/v1/disk/resources";
     private final YandexToken yandexToken;
     private final CurrentConfigProperties currentProperties;
-    private final RestTemplate restTemplate;
+    //private final RestTemplate restTemplate;
     private final YandexConfigProperties yandexConfigProperties;
+    private final RestClientService restClientService;
 
-    public DiskService(YandexToken yandexToken, CurrentConfigProperties currentProperties, RestTemplate restTemplate, YandexConfigProperties yandexConfigProperties) {
+    public DiskService(YandexToken yandexToken, CurrentConfigProperties currentProperties, /*RestTemplate restTemplate,*/ YandexConfigProperties yandexConfigProperties, RestClientService restClientService) {
         this.yandexToken = yandexToken;
         this.currentProperties = currentProperties;
-        this.restTemplate = restTemplate;
+        //this.restTemplate = restTemplate;
         this.yandexConfigProperties = yandexConfigProperties;
+        this.restClientService = restClientService;
     }
 
     /// Создание директории на яндекс диске
@@ -80,7 +82,8 @@ public class DiskService {
                 .header("Authorization", "OAuth " + yandexToken.getAccessToken())
                 .build();
         try {
-            ResponseEntity<String> exchange = restTemplate.exchange(requestEntity, String.class);
+            ResponseEntity<String> exchange = restClientService.exchangeTwoParam(requestEntity, String.class);
+//                    restTemplate.exchange(requestEntity, String.class);
             HttpStatusCode statusCode = exchange.getStatusCode();
             if (statusCode.equals(HttpStatusCode.valueOf(201))) {
                 log.debug("Successfully created folder: {}", path);
@@ -117,7 +120,9 @@ public class DiskService {
                 .build();
         log.debug("isExistResource(): path: {}, requestEntity: {}", path, requestEntity);
         try {
-            ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
+            ResponseEntity<String> response = restClientService.exchangeTwoParam(requestEntity, String.class);
+            ;
+//            restTemplate.exchange(requestEntity, String.class);
 
             return response.getStatusCode().equals(HttpStatusCode.valueOf(200));
         } catch (RestClientException e) {
@@ -145,7 +150,8 @@ public class DiskService {
                 .header("Authorization", "OAuth " + yandexToken.getAccessToken())
                 .build();
 
-        ResponseEntity<Link> linkResponseEntity = restTemplate.exchange(requestEntity, Link.class);
+        ResponseEntity<Link> linkResponseEntity = restClientService.exchangeTwoParam(requestEntity, Link.class);
+        //restTemplate.exchange(requestEntity, Link.class);
 
         if (!linkResponseEntity.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
             throw new RuntimeException("Href wasn't get. HttpStatus: " + linkResponseEntity.getStatusCode() +
@@ -160,9 +166,8 @@ public class DiskService {
                         .toUri()
         ).body(is.readAllBytes());
         log.debug("upload(): requestToUpload: {}", requestToUpload);
-        ResponseEntity<String> responseToUpload = restTemplate.exchange(
-                requestToUpload, String.class
-        );
+        ResponseEntity<String> responseToUpload = restClientService.exchangeTwoParam(requestToUpload, String.class);
+        //restTemplate.exchange(requestToUpload, String.class);
 
         if (responseToUpload.getStatusCode().is2xxSuccessful()) {
             log.debug("File \"{}\" is uploaded successfully", fullFileName);
@@ -181,12 +186,14 @@ public class DiskService {
         headers.set("Accept-Language", "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7");
         HttpEntity<Void> entity = new HttpEntity<>(headers);
         String linkk = URLDecoder.decode(href);
-        ResponseEntity<byte[]> response = restTemplate.exchange(
-                linkk,
-                HttpMethod.GET,
-                entity,
-                byte[].class
-        );
+        ResponseEntity<byte[]> response = restClientService.exchangeFourParam(linkk, HttpMethod.GET, entity, byte[].class);
+
+//        restTemplate.exchange(
+//                linkk,
+//                HttpMethod.GET,
+//                entity,
+//                byte[].class
+//        );
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new IOException("Error downloading file");
         }
@@ -216,19 +223,21 @@ public class DiskService {
                 .header("Authorization", "OAuth " + yandexToken.getAccessToken())
                 .build();
 
-        ResponseEntity<Link> response = restTemplate.exchange(requestEntity, Link.class);
+        ResponseEntity<Link> response = restClientService.exchangeTwoParam(requestEntity, Link.class);
+        //restTemplate.exchange(requestEntity, Link.class);
         if (!response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
             throw new RuntimeException("Error during getting link");
         }
         String href = response.getBody().href();
 
         String linkkk = URLDecoder.decode(href);
-        ResponseEntity<byte[]> responseDownload = restTemplate.exchange(
-                linkkk,
-                HttpMethod.GET,
-                null,
-                byte[].class
-        );
+        ResponseEntity<byte[]> responseDownload = restClientService.exchangeFourParam(linkkk, HttpMethod.GET, null, byte[].class);
+        //restTemplate.exchange(
+//                linkkk,
+//                HttpMethod.GET,
+//                null,
+//                byte[].class
+//        );
 
         String filename = Arrays.stream(href.split("&"))
                 .filter((s) -> s.startsWith("filename="))
@@ -255,19 +264,22 @@ public class DiskService {
                 .header("Content-Type", "application/json")
                 .build();
 
-        ResponseEntity<Link> response = restTemplate.exchange(request, Link.class);
+        ResponseEntity<Link> response = restClientService.exchangeTwoParam(request, Link.class);
+        //restTemplate.exchange(request, Link.class);
         if (response.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
             String linkPublishFile = URLDecoder.decode(response.getBody().href());
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
             HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<PublishFileResponse> responseEntity = restTemplate.exchange(
-                    linkPublishFile,
-                    HttpMethod.GET,
-                    entity,
-                    PublishFileResponse.class
-            );
+            ResponseEntity<PublishFileResponse> responseEntity = restClientService
+                    .exchangeFourParam(linkPublishFile, HttpMethod.GET, entity, PublishFileResponse.class);
+            //restTemplate.exchange(
+//                    linkPublishFile,
+//                    HttpMethod.GET,
+//                    entity,
+//                    PublishFileResponse.class
+//            );
 
             if (responseEntity.getStatusCode().equals(HttpStatusCode.valueOf(200))) {
                 log.debug("The file \"{}\" has been published on Yandex.Disk", filePath);
