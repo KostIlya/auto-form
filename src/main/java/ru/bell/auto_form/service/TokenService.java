@@ -28,17 +28,18 @@ import java.time.LocalDateTime;
 public class TokenService {
     private final String URI_BASE = "https://oauth.yandex.ru";
     private final YandexToken yandexToken;
-    private final RestTemplate restTemplate;
+    private final RestClientService restClientService;
     private final YandexConfigProperties yandexConfigProperties;
     private final JsonService jsonService;
     private final FileService fileService;
     private final TokenMapper tokenMapper;
     private final AppService appService;
+
     @Autowired
-    public TokenService(YandexToken yandexToken, RestTemplate restTemplate, YandexConfigProperties yandexConfigProperties,
+    public TokenService(YandexToken yandexToken, RestClientService restClientService, YandexConfigProperties yandexConfigProperties,
                         JsonService jsonService, FileService fileService, TokenMapper tokenMapper, AppService appService) {
         this.yandexToken = yandexToken;
-        this.restTemplate = restTemplate;
+        this.restClientService = restClientService;
         this.yandexConfigProperties = yandexConfigProperties;
         this.jsonService = jsonService;
         this.fileService = fileService;
@@ -97,7 +98,7 @@ public class TokenService {
         HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(requestBodyMap, headers);
         log.debug("setToken(): uriBuilder: {}", uriBase);
         try {
-            ResponseEntity<String> response = restTemplate.exchange(uriBase, HttpMethod.POST, entity, String.class);
+            ResponseEntity<String> response = restClientService.exchangeFourParam(uriBase, HttpMethod.POST, entity, String.class);
             log.debug("setToken(): responseStatusCode: {}", response.getStatusCode());
             log.debug("setToken(): responseHeaders: {}", response.getHeaders());
             log.debug("setToken(): responseBody: {}", response.getBody());
@@ -111,7 +112,7 @@ public class TokenService {
                     yandexConfigProperties.getCsvSeparator());
 
             log.debug("setToken(): yandexToken: {}", yandexToken.getAccessToken());
-        } catch(HttpClientErrorException e) {
+        } catch (HttpClientErrorException e) {
             log.error("setToken(): status: {}, body: {}", e.getStatusText(), e.getResponseBodyAsString());
             throw new CriticalException(e);
         } catch (RestClientException e) {
@@ -125,7 +126,7 @@ public class TokenService {
         String path = yandexConfigProperties.getCsvTokenPath();
         String separator = yandexConfigProperties.getCsvSeparator();
         if (fileService.isExist(path) && fileService.isValidCsvWithYandexToken(path, separator)
-            && !LocalDateTime.now().isAfter(yandexToken.getExpiresAt())) {
+                && !LocalDateTime.now().isAfter(yandexToken.getExpiresAt())) {
             if (LocalDateTime.now().isAfter(yandexToken.getExpiresAt().minusMonths(5))) {
                 log.debug("checkToken(): try update token.");
 

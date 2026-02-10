@@ -16,6 +16,17 @@ import org.apache.poi.ss.usermodel.*;
 @Service
 @Slf4j
 public class XlsxService {
+    public Set<String> getAllExistsAnswersIds(String filePath) {
+        try (FileInputStream file = new FileInputStream(filePath);
+             Workbook workbook = WorkbookFactory.create(file)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            return getAllExistsAnswersIds(sheet);
+        } catch (Exception e) {
+            log.error("appendAnswer(): {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
     public Integer appendAnswers(List<AnswerDTO> answers, String filePath) {
         Integer countAnswersRecordings = 0;
         try (FileInputStream file = new FileInputStream(filePath);
@@ -63,7 +74,7 @@ public class XlsxService {
         }
     }
 
-    private boolean isExistAnswer(String answerId, Set<String> existAnswersIds) {
+    public boolean isExistAnswer(String answerId, Set<String> existAnswersIds) {
         return existAnswersIds.contains(answerId);
     }
 

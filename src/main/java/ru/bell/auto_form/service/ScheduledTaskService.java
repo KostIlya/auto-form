@@ -1,14 +1,11 @@
 package ru.bell.auto_form.service;
 
-
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.bell.auto_form.config.CurrentConfigProperties;
 import ru.bell.auto_form.config.YandexConfigProperties;
-import ru.bell.auto_form.config.YandexTwoConfigProperties;
 import ru.bell.auto_form.exception.CriticalException;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 
@@ -18,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -36,12 +34,10 @@ public class ScheduledTaskService {
     private final SeleniumService seleniumService;
     private final YandexConfigProperties yandexConfigProperties;
     private final CurrentConfigProperties currentProperties;
-    private final AppService appService;
 
     public ScheduledTaskService(TokenService tokenService, DiskService diskService, FormService formService,
                                 XlsxService xlsxService, FileService fileService, SeleniumService seleniumService,
-                                CurrentConfigProperties currentProperties, YandexConfigProperties yandexConfigProperties,
-                                AppService appService) {
+                                CurrentConfigProperties currentProperties, YandexConfigProperties yandexConfigProperties) {
         this.tokenService = tokenService;
         this.diskService = diskService;
         this.formService = formService;
@@ -50,7 +46,6 @@ public class ScheduledTaskService {
         this.seleniumService = seleniumService;
         this.currentProperties = currentProperties;
         this.yandexConfigProperties = yandexConfigProperties;
-        this.appService = appService;
     }
 
     @Scheduled(initialDelay = DAYS_FOR_UPDATE_TOKEN, fixedRate = DAYS_FOR_UPDATE_TOKEN, timeUnit = TimeUnit.DAYS)
@@ -70,39 +65,39 @@ public class ScheduledTaskService {
             }
         }
 
+        int pollingIntervalMultiplier = 3;
         List<String> tempFilesPaths = new ArrayList<>();
         try {
             log.info("Run...");
             // получаю данные с формы
-            List<AnswerDTO> answers = formService.getAnswersInLastSeconds(currentProperties.getPollingTimeMilliseconds() / 1000);
+            List<AnswerDTO> answers = formService.getAnswersInLastSeconds(pollingIntervalMultiplier * (currentProperties.getPollingTimeMilliseconds() / 1000));
 
             Integer countIntermediateAnswersRecordings = 0;
-            // скачиваю файлы из ответов
-            for (AnswerDTO answer : answers) {
-                String fileNameResume = uploadOneFileOnYandexDisk(answer.getResume(), tempFilesPaths);
-                answer.setResume(diskService.publicFile(fileNameResume));
-
-                String fileNameQuestionnaire = uploadOneFileOnYandexDisk(answer.getQuestionnaire(), tempFilesPaths);
-                answer.setQuestionnaire(diskService.publicFile(fileNameQuestionnaire));
-            }
-            // заполняю таблицу
-
             String fileName = yandexConfigProperties.getTableAnswersName().startsWith("/") ?
                     yandexConfigProperties.getTableAnswersName() : "/" + yandexConfigProperties.getTableAnswersName().trim();
             String filePath = diskService.download(fileName);
             tempFilesPaths.add(filePath);
+            Set<String> existAnswersIds = xlsxService.getAllExistsAnswersIds(filePath);
+            // скачиваю файлы из ответов
+            for (AnswerDTO answer : answers) {
+                if (!xlsxService.isExistAnswer(answer.getId(), existAnswersIds)) {
+                    String fileNameResume = uploadOneFileOnYandexDisk(answer.getResume(), tempFilesPaths);
+                    answer.setResume(diskService.publicFile(fileNameResume));
 
+                    String fileNameQuestionnaire = uploadOneFileOnYandexDisk(answer.getQuestionnaire(), tempFilesPaths);
+                    answer.setQuestionnaire(diskService.publicFile(fileNameQuestionnaire));
+                }
+            }
+            // заполняю таблицу
             if (!answers.isEmpty()) {
                 countIntermediateAnswersRecordings = fillXlsxFile(answers, filePath, fileName);
             }
-
             printResult("IntermediateTable", countIntermediateAnswersRecordings);
-            Integer countAnswersRecordings = seleniumService.execute();
 
+            Integer countAnswersRecordings = seleniumService.execute();
             printResult("ResultTable", countAnswersRecordings);
         } catch (CriticalException e) {
             log.error("work(): ", e);
-            appService.exitWithCode(1);
         } catch (Exception e) {
             log.error("work(): {}", e.toString());
         } finally {
