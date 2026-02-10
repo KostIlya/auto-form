@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -78,28 +79,28 @@ public class ScheduledTaskService {
             List<AnswerDTO> answers = formService.getAnswersInLastSeconds(pollingIntervalMultiplier * (currentProperties.getPollingTimeMilliseconds() / 1000));
 
             Integer countIntermediateAnswersRecordings = 0;
-            // скачиваю файлы из ответов
-            for (AnswerDTO answer : answers) {
-                String fileNameResume = uploadOneFileOnYandexDisk(answer.getResume(), tempFilesPaths);
-                answer.setResume(diskService.publicFile(fileNameResume));
-
-                String fileNameQuestionnaire = uploadOneFileOnYandexDisk(answer.getQuestionnaire(), tempFilesPaths);
-                answer.setQuestionnaire(diskService.publicFile(fileNameQuestionnaire));
-            }
-            // заполняю таблицу
-
             String fileName = yandexConfigProperties.getTableAnswersName().startsWith("/") ?
                     yandexConfigProperties.getTableAnswersName() : "/" + yandexConfigProperties.getTableAnswersName().trim();
             String filePath = diskService.download(fileName);
             tempFilesPaths.add(filePath);
+            Set<String> existAnswersIds = xlsxService.getAllExistsAnswersIds(filePath);
+            // скачиваю файлы из ответов
+            for (AnswerDTO answer : answers) {
+                if (!xlsxService.isExistAnswer(answer.getId(), existAnswersIds)) {
+                    String fileNameResume = uploadOneFileOnYandexDisk(answer.getResume(), tempFilesPaths);
+                    answer.setResume(diskService.publicFile(fileNameResume));
 
+                    String fileNameQuestionnaire = uploadOneFileOnYandexDisk(answer.getQuestionnaire(), tempFilesPaths);
+                    answer.setQuestionnaire(diskService.publicFile(fileNameQuestionnaire));
+                }
+            }
+            // заполняю таблицу
             if (!answers.isEmpty()) {
                 countIntermediateAnswersRecordings = fillXlsxFile(answers, filePath, fileName);
             }
-
             printResult("IntermediateTable", countIntermediateAnswersRecordings);
-            Integer countAnswersRecordings = seleniumService.execute();
 
+            Integer countAnswersRecordings = seleniumService.execute();
             printResult("ResultTable", countAnswersRecordings);
         } catch (CriticalException e) {
             log.error("work(): ", e);
