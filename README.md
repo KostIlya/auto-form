@@ -38,10 +38,10 @@
 
 ```bash
 cd /tmp
-curl -O "https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.46/linux64/chrome-headless-shell-linux64.zip"
-unzip chrome-headless-shell-linux64.zip
-sudo mv /tmp/chrome-headless-shell-linux64 /usr/local/bin
-sudo ln -s /usr/local/bin/chrome-headless-shell-linux64/chrome-headless-shell /usr/local/bin/google-chrome
+curl -O "https://storage.googleapis.com/chrome-for-testing-public/145.0.7632.46/linux64/chrome-linux64.zip"
+unzip chrome-linux64.zip
+sudo mv /tmp/chrome-linux64 /usr/local/bin
+sudo ln -s /usr/local/bin/chrome-linux64/chrome /usr/local/bin/google-chrome
 sudo apt-get update && sudo apt-get install -y \
     libatk1.0-0t64 \
     libatk-bridge2.0-0t64 \
