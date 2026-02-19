@@ -34,7 +34,7 @@
 * Chrome Driver.
 
 ## Команды для установки Google Chrome и Chrome Driver (Ubuntu 24.04.3 LTS)
-На данный момент стабильные версии Google Chrome - 145.0.7632.46, Chrome Driver - 145.0.7632.46. Версии Google Chrome и Chrome Driver должны быть соответствующие.
+На данный момент стабильные версии Google Chrome - 145.0.7632.46, Chrome Driver - 145.0.7632.46 (https://googlechromelabs.github.io/chrome-for-testing/). Версии Google Chrome и Chrome Driver должны быть соответствующие.
 
 ```bash
 cd /tmp
