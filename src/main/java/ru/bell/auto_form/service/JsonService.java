@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import java.util.List;
+
 @Service
 @Slf4j
 public class JsonService {
@@ -18,7 +20,7 @@ public class JsonService {
 
     public JsonService() {
         this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule()); // Для поддержки ZonedDateTime
+        this.objectMapper.registerModule(new JavaTimeModule());
     }
 
     public AnswerDTO parseJsonToAnswer(String jsonString) {
@@ -73,7 +75,12 @@ public class JsonService {
                     }
                     break;
                 case "location":
-                    answerDTO.setLocation(valueNode.asText());
+                    List<JsonNode> list = valueNode.findValues("label");
+                    if (list.isEmpty()) {
+                        answerDTO.setLocation(valueNode.asText());
+                    } else {
+                        answerDTO.setLocation(list.get(0).asText());
+                    }
                     break;
                 case "telegram":
                     answerDTO.setTelegram(valueNode.asText());
