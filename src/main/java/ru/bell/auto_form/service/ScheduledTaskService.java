@@ -5,17 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import ru.bell.auto_form.config.CurrentConfigProperties;
-import ru.bell.auto_form.config.YandexConfigProperties;
-import ru.bell.auto_form.exception.CriticalException;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -27,25 +19,16 @@ public class ScheduledTaskService {
     private boolean state = false;
 
     private final TokenService tokenService;
-    private final DiskService diskService;
     private final FormService formService;
-    private final XlsxService xlsxService;
-    private final FileService fileService;
-    private final SeleniumService seleniumService;
-    private final YandexConfigProperties yandexConfigProperties;
     private final CurrentConfigProperties currentProperties;
+    private final WorkService workService;
 
-    public ScheduledTaskService(TokenService tokenService, DiskService diskService, FormService formService,
-                                XlsxService xlsxService, FileService fileService, SeleniumService seleniumService,
-                                CurrentConfigProperties currentProperties, YandexConfigProperties yandexConfigProperties) {
+    public ScheduledTaskService(TokenService tokenService, FormService formService,
+                                CurrentConfigProperties currentProperties, WorkService workService) {
         this.tokenService = tokenService;
-        this.diskService = diskService;
         this.formService = formService;
-        this.xlsxService = xlsxService;
-        this.fileService = fileService;
-        this.seleniumService = seleniumService;
         this.currentProperties = currentProperties;
-        this.yandexConfigProperties = yandexConfigProperties;
+        this.workService = workService;
     }
 
     @Scheduled(initialDelay = DAYS_FOR_UPDATE_TOKEN, fixedRate = DAYS_FOR_UPDATE_TOKEN, timeUnit = TimeUnit.DAYS)
@@ -55,7 +38,7 @@ public class ScheduledTaskService {
         log.info("Token is update after ten days is successful.");
     }
 
-    @Scheduled(fixedRateString = "${current.polling_time_milliseconds}")
+    @Scheduled(initialDelayString = "${current.polling_time_milliseconds}", fixedRateString = "${current.polling_time_milliseconds}")
     public void work() {
         while (!state) {
             try {
@@ -66,83 +49,8 @@ public class ScheduledTaskService {
         }
 
         int pollingIntervalMultiplier = 3;
-        List<String> tempFilesPaths = new ArrayList<>();
-        try {
-            log.info("Run...");
-            // получаю данные с формы
-            List<AnswerDTO> answers = formService.getAnswersInLastSeconds(pollingIntervalMultiplier * (currentProperties.getPollingTimeMilliseconds() / 1000));
+        List<AnswerDTO> answers = formService.getAnswersInLastSeconds(pollingIntervalMultiplier * (currentProperties.getPollingTimeMilliseconds() / 1000));
 
-            Integer countIntermediateAnswersRecordings = 0;
-            String fileName = yandexConfigProperties.getTableAnswersName().startsWith("/") ?
-                    yandexConfigProperties.getTableAnswersName() : "/" + yandexConfigProperties.getTableAnswersName().trim();
-            String filePath = diskService.download(fileName);
-            tempFilesPaths.add(filePath);
-            Set<String> existAnswersIds = xlsxService.getAllExistsAnswersIds(filePath);
-            // скачиваю файлы из ответов
-            for (AnswerDTO answer : answers) {
-                if (!xlsxService.isExistAnswer(answer.getId(), existAnswersIds)) {
-                    String fileNameResume = uploadOneFileOnYandexDisk(answer.getResume(), tempFilesPaths);
-                    answer.setResume(diskService.publicFile(fileNameResume));
-
-                    String fileNameQuestionnaire = uploadOneFileOnYandexDisk(answer.getQuestionnaire(), tempFilesPaths);
-                    answer.setQuestionnaire(diskService.publicFile(fileNameQuestionnaire));
-                }
-            }
-            // заполняю таблицу
-            if (!answers.isEmpty()) {
-                countIntermediateAnswersRecordings = fillXlsxFile(answers, filePath, fileName);
-            }
-            printResult("IntermediateTable", countIntermediateAnswersRecordings);
-
-            Integer countAnswersRecordings = seleniumService.execute();
-            printResult("ResultTable", countAnswersRecordings);
-        } catch (CriticalException e) {
-            log.error("work(): ", e);
-        } catch (Exception e) {
-            log.error("work(): {}", e.toString());
-        } finally {
-            fileService.deleteFiles(tempFilesPaths);
-        }
-        log.info("Finish.");
-    }
-
-    private String uploadOneFileOnYandexDisk(String href, List<String> tempFilesPath) {
-        try {
-            String filePath = diskService.downloadFileFromYandexFormForLink(href);
-            // загружаю файлы на яндекс диск
-            String filename = new File(filePath).getName();
-
-            String fullFileName = yandexConfigProperties.getFilesDirectory() + "/" + filename;
-            try (InputStream is = new FileInputStream(filePath)) {
-                diskService.upload(is, fullFileName);
-            }
-            tempFilesPath.add(filePath);
-            return fullFileName;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Integer fillXlsxFile(List<AnswerDTO> answers, String filePath, String fileName) {
-
-        Integer countAnswersRecordings = 0;
-        try {
-            countAnswersRecordings = xlsxService.appendAnswers(answers, filePath);
-            try (InputStream is = new FileInputStream(filePath)) {
-                diskService.upload(is, fileName);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return countAnswersRecordings;
-    }
-
-    private void printResult(String nameTable, Integer countAnswersRecordings) {
-        if (countAnswersRecordings > 0)
-            log.info("{}: New answers to the form have been recorded. There were {} answers recorded.",
-                    nameTable, countAnswersRecordings);
-        else {
-            log.info("{}: New answers is not.", nameTable);
-        }
+        workService.work(answers);
     }
 }

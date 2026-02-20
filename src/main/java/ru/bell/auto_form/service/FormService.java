@@ -7,6 +7,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.bell.auto_form.config.YandexConfigProperties;
+import ru.bell.auto_form.model.AllExportRequest;
 import ru.bell.auto_form.model.ExportRequest;
 import ru.bell.auto_form.model.YandexToken;
 import ru.bell.auto_form.model.dto.AnswerDTO;
@@ -39,6 +40,53 @@ public class FormService {
         this.BASE_URL = "https://api.forms.yandex.net/v1/surveys/"
                 + yandexConfigProperties.getSurveyId()
                 + "/answers";
+    }
+
+    public List<AnswerDTO> getAllAnswers() {
+        final String url = BASE_URL + "/export";
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "OAuth " + yandexToken.getAccessToken());
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url);
+
+            AllExportRequest request = new AllExportRequest();
+            request.setColumns(getColumnsWithId());
+            request.setFormat("csv");
+            request.setUpload("default");
+            request.setUpload_files(false);
+
+            ObjectMapper mapper = new ObjectMapper();
+            String requestBodyJson = mapper.writeValueAsString(request);
+
+            log.debug("getAllAnswers(): yandexToken: {}", yandexToken);
+
+            log.debug("getAllAnswers(): uriBuilder: {}", uriBuilder.toUriString());
+            log.debug("getAllAnswers(): headers: {}", headers);
+            log.debug("getAllAnswers(): requestBodyJson: {}", requestBodyJson);
+            HttpEntity<String> entity = new HttpEntity<>(requestBodyJson, headers);
+            log.debug("getAllAnswers(): entity: {}", entity);
+
+            ResponseEntity<ResultExport> response = restClientService.exchangeFourParam(uriBuilder.toUriString(),
+                    HttpMethod.POST,
+                    entity,
+                    ResultExport.class);
+
+            if (!response.getStatusCode().equals(HttpStatusCode.valueOf(202))) {
+                throw new RuntimeException("getAnswersInLastSeconds: Don't get export");
+            }
+            // response.getBody().status(): ok, fail, wait, not_running
+
+            if (response.getBody().status().equals("not_running") || response.getBody().status().equals("fail")) {
+                throw new RuntimeException("getAnswersInLastSeconds: Status export is " + response.getBody().status());
+            }
+
+            return getAnswers(response.getBody().id());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Failed to export answers", e);
+        }
     }
 
     public List<AnswerDTO> getAnswersInLastSeconds(Integer seconds) {
