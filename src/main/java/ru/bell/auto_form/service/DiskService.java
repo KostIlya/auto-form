@@ -1,11 +1,9 @@
 package ru.bell.auto_form.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.bell.auto_form.config.CurrentConfigProperties;
 import ru.bell.auto_form.config.YandexConfigProperties;
@@ -79,14 +77,11 @@ public class DiskService {
                 )
                 .header("Authorization", "OAuth " + yandexToken.getAccessToken())
                 .build();
-        try {
-            ResponseEntity<String> exchange = restClientService.exchangeTwoParam(requestEntity, String.class);
-            HttpStatusCode statusCode = exchange.getStatusCode();
-            if (statusCode.equals(HttpStatusCode.valueOf(201))) {
-                log.debug("Successfully created folder: {}", path);
-            }
-        } catch (Exception e) {
-            log.error("Path {}: {}", path, e.getMessage());
+
+        ResponseEntity<String> exchange = restClientService.exchangeTwoParam(requestEntity, String.class);
+        HttpStatusCode statusCode = exchange.getStatusCode();
+        if (statusCode.equals(HttpStatusCode.valueOf(201))) {
+            log.debug("Successfully created folder: {}", path);
         }
     }
 
@@ -121,7 +116,7 @@ public class DiskService {
 
             return response.getStatusCode().equals(HttpStatusCode.valueOf(200));
         } catch (RestClientException e) {
-            log.error(e.getMessage());
+            log.debug("isExistResource(): RestClientException: {}", e.getMessage());
             return false;
         }
     }
@@ -192,7 +187,7 @@ public class DiskService {
         try (FileOutputStream fos = new FileOutputStream(destination)) {
             fos.write(response.getBody());
         } catch (Exception e) {
-            log.error(e.getMessage());
+            throw new RuntimeException(e);
         }
 
         log.debug("File is downloaded successfully to path: {}", destination);
@@ -228,7 +223,7 @@ public class DiskService {
         try (FileOutputStream fos = new FileOutputStream(filePath)) {
             fos.write(responseDownload.getBody());
         } catch (Exception e) {
-            log.error("Folder not found: {}", e.getMessage());
+            throw new RuntimeException(e);
         }
 
         return filePath;

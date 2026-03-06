@@ -11,7 +11,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.bell.auto_form.config.YandexConfigProperties;
@@ -34,10 +33,10 @@ public class TokenService {
     private final FileService fileService;
     private final TokenMapper tokenMapper;
     private final AppService appService;
-
+    private final EmailService emailService;
     @Autowired
     public TokenService(YandexToken yandexToken, RestClientService restClientService, YandexConfigProperties yandexConfigProperties,
-                        JsonService jsonService, FileService fileService, TokenMapper tokenMapper, AppService appService) {
+                        JsonService jsonService, FileService fileService, TokenMapper tokenMapper, AppService appService, EmailService emailService) {
         this.yandexToken = yandexToken;
         this.restClientService = restClientService;
         this.yandexConfigProperties = yandexConfigProperties;
@@ -45,6 +44,7 @@ public class TokenService {
         this.fileService = fileService;
         this.tokenMapper = tokenMapper;
         this.appService = appService;
+        this.emailService = emailService;
     }
 
     public String getUriToCodeRequest() {
@@ -134,6 +134,7 @@ public class TokenService {
                     updateToken();
                 } catch (CriticalException e) {
                     log.error("checkToken(): ", e);
+                    emailService.sendExceptionMessage("Возникла ошибка при обновлении токена: " + e.getMessage());
                     appService.exitWithCode(1);
                 }
             }
@@ -180,6 +181,7 @@ public class TokenService {
                 Thread.sleep(3000);
             } catch (InterruptedException e) {
                 log.error("waitCompleteAuthStart(): {}", e.getMessage());
+                throw new RuntimeException(e);
             }
         }
     }

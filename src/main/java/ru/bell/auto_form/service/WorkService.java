@@ -3,7 +3,6 @@ package ru.bell.auto_form.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import ru.bell.auto_form.config.YandexConfigProperties;
-import ru.bell.auto_form.exception.CriticalException;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 
 import java.io.File;
@@ -61,12 +60,8 @@ public class WorkService {
 
             Integer countAnswersRecordings = seleniumService.execute();
             printResult("ResultTable", countAnswersRecordings);
-        } catch (CriticalException e) {
-            log.error("work(): {}", e.toString());
-            emailService.sendExceptionMessage("A CriticalException has occurred: " + e);
         } catch (Exception e) {
-            log.error("work(): {}", e.toString());
-            emailService.sendExceptionMessage("An exception has occurred: " + e);
+            throw new RuntimeException(e);
         } finally {
             fileService.deleteFiles(tempFilesPaths);
         }

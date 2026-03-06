@@ -110,6 +110,7 @@ public class JsonService {
             }
         } catch (Exception e) {
             log.error("Failed to parse field {}: {}", fieldId, e.getMessage());
+            throw new RuntimeException(e);
         }
     }
 }

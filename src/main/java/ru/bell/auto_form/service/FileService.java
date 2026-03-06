@@ -2,7 +2,6 @@ package ru.bell.auto_form.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.bell.auto_form.model.ResponseToken;
 import ru.bell.auto_form.model.YandexToken;
 
 import java.io.IOException;

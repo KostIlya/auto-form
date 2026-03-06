@@ -81,17 +81,27 @@ sudo mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/
 
 Далее перейти по ссылке https://forms.yandex.ru/admin/ и в разделе бизнес форм создать новую бизнес форму. 
 
+## Настройка Яндекс Почты
+
+Для настройки отправки по SMTP протоколу необходимо воспользоваться следующей инструкцией: https://yandex.ru/support/yandex-360/customers/mail/ru/mail-clients/others#smtpsetting
+
 ## Свойства приложения
-| Свойство                          | Переменные среды                  | Значение                                                                                                                                                                                      | По умолчанию                         |
-|-----------------------------------|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------|
-| yandex.client_id                  | YANDEX_CLIENT_ID                  | идентификатор пользователя Яндекс приложения                                                                                                                                                  |                                      |
-| yandex.secret_client_id           | YANDEX_SECRET_CLIENT_ID           | секретный ключ пользователя Яндекс приложения                                                                                                                                                 |                                      |
-| yandex.redirect_uri               | YANDEX_REDIRECT_URI               | redirect uri, который был указан при регистрации приложения Яндекс                                                                                                                            | http://localhost:8080/auth/back      |
-| yandex.survey_id                  | YANDEX_SURVEY_ID                  | идентификатор Яндекс.Формы                                                                                                                                                                    |                                      |
-| yandex.files_directory            | YANDEX_FILES_DIRECTORY            | путь до директории на Яндекс.Диске на 1 аккаунте Яндекса, где будут хранится файлы (резюме и опросник) из ответов к Яндекс.Форме, который должен быть записан относительно корня Яндекс.Диска | /foldir                              |
-| yandex.csv_token_path             | CSV_TOKEN_PATH                    | абсолютный путь до файла tokenStorage.csv                                                                                                                                                     | /home/$USER/data/tokenStorage.csv    |
-| yandex-two.url_disk               | YANDEX_TWO_URL_DISK               | url адрес до Яндекс.Таблицы на 2 аккаунте Яндекса, ссылка должна быть доступна для редактирования не авторизированным пользователем                                                           |                                      |
-| current.polling_time_milliseconds | CURRENT_POLLING_TIME_MILLISECONDS | период, с которым программа запускается в миллисекундах                                                                                                                                            | 43200000                             |
+| Свойство                          | Переменные среды                  | Значение                                                                                                                                                                                      | По умолчанию                      |
+|-----------------------------------|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------|
+| yandex.client_id                  | YANDEX_CLIENT_ID                  | идентификатор пользователя Яндекс приложения                                                                                                                                                  |                                   |
+| yandex.secret_client_id           | YANDEX_SECRET_CLIENT_ID           | секретный ключ пользователя Яндекс приложения                                                                                                                                                 |                                   |
+| yandex.redirect_uri               | YANDEX_REDIRECT_URI               | redirect uri, который был указан при регистрации приложения Яндекс                                                                                                                            | http://localhost:8080/auth/back   |
+| yandex.survey_id                  | YANDEX_SURVEY_ID                  | идентификатор Яндекс.Формы                                                                                                                                                                    |                                   |
+| yandex.files_directory            | YANDEX_FILES_DIRECTORY            | путь до директории на Яндекс.Диске на 1 аккаунте Яндекса, где будут хранится файлы (резюме и опросник) из ответов к Яндекс.Форме, который должен быть записан относительно корня Яндекс.Диска | /foldir                           |
+| yandex.csv_token_path             | CSV_TOKEN_PATH                    | абсолютный путь до файла tokenStorage.csv                                                                                                                                                     | /home/$USER/data/tokenStorage.csv |
+| yandex-two.url_disk               | YANDEX_TWO_URL_DISK               | url адрес до Яндекс.Таблицы на 2 аккаунте Яндекса, ссылка должна быть доступна для редактирования не авторизированным пользователем                                                           |                                   |
+| current.polling_time_milliseconds | CURRENT_POLLING_TIME_MILLISECONDS | период, с которым программа запускается в миллисекундах                                                                                                                                       | 43200000                          |
+| spring.mail.protocol              | SPRING_MAIL_PROTOCOL              | Протокол для отправки почты                                                                                                                                                                   | smtps                             |
+| spring.mail.host                  | SPRING_MAIL_HOST                  | Адрес SMTP-сервера                                                                                                                                                                            | smtp.yandex.ru                    |
+| spring.mail.port                  | SPRING_MAIL_PORT                  | Порт для SMTP-соединения                                                                                                                                                                      | 465                               |
+| spring.mail.username              | SPRING_MAIL_USERNAME              | Адрес электронной почты Яндекса, с которого будут отправляться письма                                                                                                                         |                                   |
+| spring.mail.password              | SPRING_MAIL_PASSWORD              | Пароль приложения для Яндекс.Почты.                                                                                                                                                           |                                   |
+| spring.mail.to                    | SPRING_MAIL_TO                    | Адрес электронной почты куда будут отсылаться письма                                                                                                                                          |                                   |
 
 ## Запуск приложения
 Linux (Ubuntu):
@@ -136,18 +146,23 @@ Set WshShell = Nothing
 
 3.1. В левой панели выбрать "Библиотека планировщика задач".
 В правой панели выбрать "Создать задачу":
+
 <img src="materials/image/img1.png" width="500">
 
 3.2. Перейти в раздел "Триггеры" и нажать кнопку "Создать...":
+
 <img src="materials/image/img2.png" width="500">
 
 3.3. Перейти в раздел "Действия" и нажать кнопку "Создать...". В пункте "Программа или сценарий" вставить C:\Windows\System32\wscript.exe. В пункте добавить аргументы указать путь до файла start.vbs:
+
 <img src="materials/image/img3.png" width="500">
 
 3.4. Перейти в раздел "Условия" и выбрать нужные условия:
+
 <img src="materials/image/img4.png" width="500">
 
 3.5. Перейти в раздел "Настройки" и указать необходимые параметры:
+
 <img src="materials/image/img5.png" width="500">
 
 3.6. Нажать "ОК".

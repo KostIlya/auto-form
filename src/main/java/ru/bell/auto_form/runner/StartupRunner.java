@@ -40,25 +40,30 @@ public class StartupRunner implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
-        log.debug("run(): create if not exist csv file with Token");
-        fileService.createIfNotExistFile(yandexConfigProperties.getCsvTokenPath());
-        log.debug("run(): check token");
-        tokenService.checkTokenOnStartup();
-        log.debug("run(): create (if not exist) a folder to store resumes and questionnaires.");
-        yandexDiskService.createDirectory(yandexConfigProperties.getFilesDirectory());
-        String tableAnswers1Name = yandexConfigProperties.getTableAnswersName().startsWith("/") ?
-                yandexConfigProperties.getTableAnswersName().substring(1) : yandexConfigProperties.getTableAnswersName().trim();
-        String tableAnswers1Path = Paths.get(currentConfigProperties.getTemplateAnswersTable1Path()).toAbsolutePath()
-                + currentConfigProperties.getSeparator() + tableAnswers1Name;
-        log.debug("run(): create (if not exist) a file {} on yandex.disk 1.", tableAnswers1Name);
-        yandexDiskService.createFile(tableAnswers1Path);
+    public void run(String... args) {
+        try {
+            log.debug("run(): create if not exist csv file with Token");
+            fileService.createIfNotExistFile(yandexConfigProperties.getCsvTokenPath());
+            log.debug("run(): check token");
+            tokenService.checkTokenOnStartup();
+            log.debug("run(): create (if not exist) a folder to store resumes and questionnaires.");
+            yandexDiskService.createDirectory(yandexConfigProperties.getFilesDirectory());
+            String tableAnswers1Name = yandexConfigProperties.getTableAnswersName().startsWith("/") ?
+                    yandexConfigProperties.getTableAnswersName().substring(1) : yandexConfigProperties.getTableAnswersName().trim();
+            String tableAnswers1Path = Paths.get(currentConfigProperties.getTemplateAnswersTable1Path()).toAbsolutePath()
+                    + currentConfigProperties.getSeparator() + tableAnswers1Name;
+            log.debug("run(): create (if not exist) a file {} on yandex.disk 1.", tableAnswers1Name);
+            yandexDiskService.createFile(tableAnswers1Path);
 
-        // получаю данные с формы
-        List<AnswerDTO> answers = formService.getAllAnswers();
-        workService.work(answers);
+            // получаю данные с формы
+            List<AnswerDTO> answers = formService.getAllAnswers();
+            workService.work(answers);
 
-        scheduledTaskService.setState(true);
-        log.debug("run(): StartupRunner finish");
+            scheduledTaskService.setState(true);
+            log.debug("run(): StartupRunner finish");
+        } catch (Exception e) {
+            log.error("Error in StartupRunner.", e);
+            emailService.sendExceptionMessage("Произошла ошибка в StartupRunner: " + e.getMessage());
+        }
     }
 }

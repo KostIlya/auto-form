@@ -84,7 +84,6 @@ public class FormService {
 
             return getAnswers(response.getBody().id());
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException("Failed to export answers", e);
         }
     }
@@ -137,7 +136,6 @@ public class FormService {
 
             return getAnswers(response.getBody().id());
         } catch (Exception e) {
-            e.printStackTrace();
             throw new RuntimeException("Failed to export answers", e);
         }
     }
@@ -224,7 +222,8 @@ public class FormService {
                 ids.add(line[0].trim());
             }
         } catch (Exception e) {
-            throw new RuntimeException("getIdFromCsvResponse: " + e.getMessage());
+            log.error("getIdFromCsvResponse(): error.", e);
+            throw new RuntimeException(e);
         }
         log.debug("getIdFromCsvResponse(): ids: {}", ids);
         return ids;
