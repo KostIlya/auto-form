@@ -8,41 +8,24 @@ import ru.bell.auto_form.config.CurrentConfigProperties;
 import ru.bell.auto_form.model.dto.AnswerDTO;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
 public class ScheduledTaskService {
-    private static final int DAYS_FOR_UPDATE_TOKEN = 10;
-
     @Setter
     private boolean state = false;
 
-    private final TokenService tokenService;
     private final FormService formService;
     private final CurrentConfigProperties currentProperties;
     private final WorkService workService;
     private final EmailService emailService;
 
-    public ScheduledTaskService(TokenService tokenService, FormService formService,
+    public ScheduledTaskService(FormService formService,
                                 CurrentConfigProperties currentProperties, WorkService workService, EmailService emailService) {
-        this.tokenService = tokenService;
         this.formService = formService;
         this.currentProperties = currentProperties;
         this.workService = workService;
         this.emailService = emailService;
-    }
-
-    @Scheduled(initialDelay = DAYS_FOR_UPDATE_TOKEN, fixedRate = DAYS_FOR_UPDATE_TOKEN, timeUnit = TimeUnit.DAYS)
-    public void updateTokenEachTenDays() {
-        try {
-            log.debug("Token is update after ten days.");
-            tokenService.checkToken();
-            log.info("Token is update after ten days is successful.");
-        } catch (Exception e) {
-            log.error("Error in ScheduledTaskService: updateTokenEachTenDays().", e);
-            emailService.sendExceptionMessage("Произошла ошибка в ScheduledTaskService: " + e.getMessage());
-        }
     }
 
     @Scheduled(initialDelayString = "${current.polling_time_milliseconds}", fixedRateString = "${current.polling_time_milliseconds}")
