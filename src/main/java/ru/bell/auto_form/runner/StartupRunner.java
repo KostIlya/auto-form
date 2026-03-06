@@ -23,9 +23,11 @@ public class StartupRunner implements CommandLineRunner {
     private final ScheduledTaskService scheduledTaskService;
     private final WorkService workService;
 
+    private final EmailService emailService;
+
     public StartupRunner(YandexConfigProperties yandexConfigProperties, CurrentConfigProperties currentConfigProperties,
                          TokenService tokenService, FileService fileService, FormService formService, DiskService yandexDiskService,
-                         ScheduledTaskService scheduledTaskService, WorkService workService) {
+                         ScheduledTaskService scheduledTaskService, WorkService workService, EmailService emailService) {
         this.yandexConfigProperties = yandexConfigProperties;
         this.currentConfigProperties = currentConfigProperties;
         this.tokenService = tokenService;
@@ -34,6 +36,7 @@ public class StartupRunner implements CommandLineRunner {
         this.yandexDiskService = yandexDiskService;
         this.scheduledTaskService = scheduledTaskService;
         this.workService = workService;
+        this.emailService = emailService;
     }
 
     @Override

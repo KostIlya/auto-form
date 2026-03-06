@@ -21,13 +21,15 @@ public class WorkService {
     private final SeleniumService seleniumService;
     private final YandexConfigProperties yandexConfigProperties;
     private final FileService fileService;
+    private final EmailService emailService;
 
-    public WorkService(XlsxService xlsxService, DiskService diskService, SeleniumService seleniumService, YandexConfigProperties yandexConfigProperties, FileService fileService) {
+    public WorkService(XlsxService xlsxService, DiskService diskService, SeleniumService seleniumService, YandexConfigProperties yandexConfigProperties, FileService fileService, EmailService emailService) {
         this.xlsxService = xlsxService;
         this.diskService = diskService;
         this.seleniumService = seleniumService;
         this.yandexConfigProperties = yandexConfigProperties;
         this.fileService = fileService;
+        this.emailService = emailService;
     }
 
     public void work(List<AnswerDTO> answers) {
@@ -60,9 +62,11 @@ public class WorkService {
             Integer countAnswersRecordings = seleniumService.execute();
             printResult("ResultTable", countAnswersRecordings);
         } catch (CriticalException e) {
-            log.error("work(): ", e);
+            log.error("work(): {}", e.toString());
+            emailService.sendExceptionMessage("A CriticalException has occurred: " + e);
         } catch (Exception e) {
             log.error("work(): {}", e.toString());
+            emailService.sendExceptionMessage("An exception has occurred: " + e);
         } finally {
             fileService.deleteFiles(tempFilesPaths);
         }
