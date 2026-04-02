@@ -102,9 +102,7 @@ public class SeleniumService {
 
             actionSendKeys(actions, answerDTO.getResume(), driver, answerDTO.getId());
 
-            actions.sendKeys(answerDTO.getQuestionnaire()).perform();
-
-            actionArrowRight(actions);
+            actionSendKeys(actions, answerDTO.getQuestionnaire(), driver, answerDTO.getId());
 
             actions.keyDown(Keys.ARROW_DOWN).perform();
             for (int i = 0; i < countFieldsAnswerDTO; i++) {
