@@ -38,56 +38,45 @@ public class SeleniumService {
         this.currentProperties = currentProperties;
     }
 
-    public void loginYandexDisk(WebDriver driver, WebDriverWait wait) {
-        driver.get(yandexTwoConfigProperties.getUrlDisk());
-
-        WebElement loginEl = wait.until(ExpectedConditions.presenceOfElementLocated(By.id("react-aria-«R9ib»")));
-        loginEl.clear();
-        loginEl.sendKeys(yandexTwoConfigProperties.getLogin());
-
-        driver.findElement(By.xpath("//button[.//span[text()='Далее']]")).click();
-
-        WebElement passwordEl = wait.until(ExpectedConditions.presenceOfElementLocated(By
-                .xpath("//input[@placeholder='Пароль']")));
-        passwordEl.clear();
-        passwordEl.sendKeys(yandexTwoConfigProperties.getPassword());
-
-        driver.findElement(By.xpath("//button[.//span[text()='Далее']]")).click();
-
-//        wait.until(ExpectedConditions.presenceOfElementLocated(By
-//                .xpath("//button[.//span[text()='Напомнить позже']]")));
-//        driver.findElement(By.xpath("//button[.//span[text()='Напомнить позже']]")).click();
-        wait.until(ExpectedConditions.elementToBeClickable(By
-                .xpath("//button[.//span[text()='Напомнить позже']]"))).click();
-        try {
-            Thread.sleep(7000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public WebElement getCell(WebDriver driver, WebDriverWait wait) {
         wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(By.className("volga-frame")));
 
-        return wait.until(ExpectedConditions.presenceOfElementLocated(
-                By.xpath("//textarea[@data-testid='main-area-input']")));
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("[data-testid='spreadsheet-editor']")));
+
+        WebElement inputElement = wait.until(ExpectedConditions.presenceOfElementLocated(
+                By.xpath("//div[@data-testid='main-area-input']")
+        ));
+
+        log.debug("getCell(): Found input element \"cell\"");
+
+        return inputElement;
     }
 
     public List<String> getIds(Actions actions, WebElement cellEl) {
         List<String> ids = new ArrayList<>();
 
         actions.keyDown(Keys.ARROW_DOWN).perform();
+        String text = cellEl.findElement(By.tagName("span")).getAttribute("innerHTML");
 
-        while (!cellEl.getAttribute("value").isEmpty()) {
-            ids.add(cellEl.getAttribute("value"));
+        while (text != null && !text.isEmpty()) {
+            ids.add(text);
             actions.keyDown(Keys.ARROW_DOWN).perform();
-        }
 
+            try {
+                text = cellEl.findElement(By.tagName("span")).getAttribute("innerHTML");
+            } catch (Exception e) {
+                text = null;
+            }
+        }
         return ids;
     }
 
-    public void addRow(AnswerDTO answerDTO, Actions actions, WebElement cellEl) {
-        if (!cellEl.getAttribute("value").isEmpty()) {
+    public void addRow(AnswerDTO answerDTO, Actions actions, WebElement cellEl, WebDriver driver) throws RuntimeException {
+        String text = null;
+        try {
+            text = cellEl.findElement(By.tagName("span")).getAttribute("innerHTML");
+        } catch (Exception e) { }
+        if (text != null && !text.isEmpty()) {
             log.error("addRow(): row is not empty");
             throw new RuntimeException("addRow(): row is not empty");
         }
@@ -95,23 +84,23 @@ public class SeleniumService {
 
         try {
             Thread.sleep(200);
-            actionSendKeys(actions, answerDTO.getId());
+            actionSendKeys(actions, answerDTO.getId(), driver, answerDTO.getId());
 
-            actionSendKeys(actions, answerDTO.getCreatedAt().toString());
+            actionSendKeys(actions, answerDTO.getCreatedAt().toString(), driver, answerDTO.getId());
 
-            actionSendKeys(actions, answerDTO.getFio());
+            actionSendKeys(actions, answerDTO.getFio(), driver, answerDTO.getId());
 
-            actionSendKeys(actions, answerDTO.getAge().toString());
+            actionSendKeys(actions, answerDTO.getAge().toString(), driver, answerDTO.getId());
 
-            actionSendKeys(actions, answerDTO.getLocation());
+            actionSendKeys(actions, answerDTO.getLocation(), driver, answerDTO.getId());
 
-            actionSendKeys(actions, answerDTO.getTelegram());
+            actionSendKeys(actions, answerDTO.getTelegram(), driver, answerDTO.getId());
 
-            actionSendKeys(actions, answerDTO.getEmail());
+            actionSendKeys(actions, answerDTO.getEmail(), driver, answerDTO.getId());
 
-            actionSendKeys(actions, answerDTO.getHr());
+            actionSendKeys(actions, answerDTO.getHr(), driver, answerDTO.getId());
 
-            actionSendKeys(actions, answerDTO.getResume());
+            actionSendKeys(actions, answerDTO.getResume(), driver, answerDTO.getId());
 
             actions.sendKeys(answerDTO.getQuestionnaire()).perform();
 
@@ -128,7 +117,8 @@ public class SeleniumService {
         }
     }
 
-    private void actionSendKeys(Actions actions, String text) throws InterruptedException {
+    private void actionSendKeys(Actions actions, String text, WebDriver driver, String answerId) throws InterruptedException, RuntimeException {
+        checkCaptchaByAddRow(driver, answerId);
         actions.sendKeys(text).perform();
         actionArrowRight(actions);
     }
@@ -138,13 +128,29 @@ public class SeleniumService {
         Thread.sleep(200);
     }
 
+    private void checkCaptchaByAddRow(WebDriver webDriver, String answerId) throws RuntimeException {
+        boolean isRobot = false;
+        try {
+            if (webDriver.getTitle().equals("Вы не робот?")) {
+                isRobot = true;
+            } else {
+                webDriver.findElement(By.xpath("//input[@class='CheckboxCaptcha-Button']"));
+                isRobot = true;
+            }
+        } catch (Exception e) {
+            log.debug("checkCaptchaByAddRow(): Captcha is not found:" + e.getMessage());
+        }
+        if (isRobot) {
+            throw new RuntimeException("Возникла captcha при добавлении записи с id = " + answerId);
+        }
+    }
+
     public Integer execute() {
         Integer count = 0;
         WebDriver webDriver = WebDriverFactory.createDriver();
         WebDriverWait webDriverWait = new WebDriverWait(webDriver, Duration.ofSeconds(30));
         webDriver.get(yandexTwoConfigProperties.getUrlDisk());
         webDriverWait.until(ExpectedConditions.jsReturnsValue("return document.readyState === 'complete';"));
-//        loginYandexDisk(webDriver, webDriverWait);
         Actions actions = new Actions(webDriver);
 
         WebElement cell = getCell(webDriver, webDriverWait);
@@ -160,7 +166,7 @@ public class SeleniumService {
             for (int i = 1; i < countRows; i++) {
                 if (!idsFromAnswers2.contains(xlsxService.getId(sheet, i))) {
                     AnswerDTO answerDTO = xlsxService.getAnswerDTO(sheet, i);
-                    addRow(answerDTO, actions, cell);
+                    addRow(answerDTO, actions, cell, webDriver);
                     count++;
                 }
             }
